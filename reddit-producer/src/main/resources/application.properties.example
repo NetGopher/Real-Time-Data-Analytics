@@ -1,0 +1,19 @@
+# Configure app
+server.port=8081
+
+# Reddit Configuration
+spring.reddit.username=YOUR_REDDIT_USERNAME
+spring.reddit.password=YOUR_REDDIT_PASSWORD
+spring.reddit.client-id=YOUR_CLIENT_ID
+spring.reddit.client-secret=YOUR_CLIENT_SECRET
+
+spring.reddit.platform=bot
+spring.reddit.appid=reddit.producer
+spring.reddit.version=0.0.1
+
+spring.reddit.subreddit=all
+
+
+# Configure Kafka
+spring.kafka.bootstrap-servers=127.0.0.1:9092
+spring.kafka.template.default-topic=submissions
