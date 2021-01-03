@@ -39,7 +39,7 @@ public class KafkaConsumerConfig {
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupID);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, SubmissionDeserializer.class);
 
         return props;
     }
@@ -53,8 +53,7 @@ public class KafkaConsumerConfig {
 
     @Bean
     public ConsumerFactory<String, Submission> consumerFactory(){
-        return new DefaultKafkaConsumerFactory<>(consumerConfigs(), new StringDeserializer(),
-                new JsonDeserializer<>(Submission.class));
+        return new DefaultKafkaConsumerFactory<>(consumerConfigs());
     }
 
 }

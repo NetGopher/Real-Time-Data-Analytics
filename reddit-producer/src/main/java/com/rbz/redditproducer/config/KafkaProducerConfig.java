@@ -1,6 +1,5 @@
 package com.rbz.redditproducer.config;
 
-import com.rbz.redditproducer.serializers.SubmissionDeserializer;
 import com.rbz.redditproducer.serializers.SubmissionSerializer;
 import com.rbz.redditproducer.service.KafkaProducer;
 import net.dean.jraw.models.Submission;
