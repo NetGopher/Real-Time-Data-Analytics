@@ -58,7 +58,7 @@ public class SubmissionStreamEventService {
         // "Navigate" to the subreddit
         SubredditReference subreddit = redditClient.subreddit(subredditName);
 
-        Stream<Submission> postsStream= subreddit.posts().sorting(SubredditSort.NEW).limit(5).build().stream();
+        Stream<Submission> postsStream= subreddit.posts().sorting(SubredditSort.NEW).build().stream();
         for (Stream<Submission> it = postsStream; it.hasNext(); ) {
             Submission submission = it.next();
             System.out.println(submission.getTitle()+ " by " + submission.getAuthor());
