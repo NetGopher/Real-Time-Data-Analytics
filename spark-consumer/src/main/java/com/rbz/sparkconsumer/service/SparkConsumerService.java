@@ -10,6 +10,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
@@ -27,12 +28,19 @@ import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Service;
 import scala.Tuple2;
+import util.SteamType;
 
 import java.util.*;
 
 @Service
 public class SparkConsumerService {
     private final Logger log = LoggerFactory.getLogger(getClass());
+
+    @Value("${spring.kafka.bootstrap-servers}")
+    private String bootstrapServers;
+
+    @Value("${spring.spark.output-topic}")
+    private String outputTopic;
 
     private final SparkConf sparkConf;
     private final KafkaConsumerConfig kafkaConsumerConfig;
@@ -46,6 +54,7 @@ public class SparkConsumerService {
         this.kafkaConsumerConfig = kafkaConsumerConfig;
         this.topics = Arrays.asList(topics);
     }
+
     public void run(){
         log.debug("Running Spark Consumer Service..");
 
@@ -80,50 +89,49 @@ public class SparkConsumerService {
             x.collect().stream().forEach(subreddit -> System.out.println("subreddit: "+subreddit));
         });
 
-
-        JSONArray recordArray = new JSONArray();
+        ArrayList<Map<String, Object>> recordArray = new ArrayList<Map<String, Object>>();
 
         posts_subreddit
-            .mapToPair(subreddit -> new Tuple2<>(subreddit, 1))
-            .reduceByKey((a, b) -> Integer.sum(a, b))
+                .mapToPair(subreddit -> new Tuple2<>(subreddit, 1))
+                .reduceByKey((a, b) -> Integer.sum(a, b))
 
-            .mapToPair(stringIntegerTuple2 -> stringIntegerTuple2.swap())
-            .foreachRDD(rrdd -> {
-                System.out.println("---------------------------------------------------------------");
-                List<Tuple2<Integer, String>> sorted;
-                JavaPairRDD<Integer, String> counts = rrdd.sortByKey(false);
-                sorted = counts.collect();
-                //System.out.println("counts: " + counts.);
-                sorted.forEach( record -> {
-                    JSONObject jsonObj = new JSONObject();
-                    try {
-                        jsonObj.put("subreddit", record._2);
-                        jsonObj.put("count", record._1);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
+                .mapToPair(stringIntegerTuple2 -> stringIntegerTuple2.swap())
+                .foreachRDD(rrdd -> {
+                    System.out.println("---------------------------------------------------------------");
+                    List<Tuple2<Integer, String>> sorted;
+                    JavaPairRDD<Integer, String> counts = rrdd.sortByKey(false);
+                    sorted = counts.collect();
+                    sorted.forEach( record -> {
+                        Map<String, Object> obj =  new HashMap<>();
+                        obj.put("subreddit", record._2);
+                        obj.put("count", record._1);
+
+                        recordArray.add(obj);
+                        System.out.println(String.format("subreddit -> %s (%d posts)", record._2, record._1));
+                    });
+
+                    Map<String, Object> results = new HashMap<>();
+                    results.put("type", SteamType.REDDIT_MENTIONS);
+                    results.put("data", recordArray);
+
+                    ObjectMapper objectMapper = new ObjectMapper();
+
+                    String json = null;
+
+                    json = objectMapper.writeValueAsString(results);
+
+                    if(json != null){
+                        Map<String, Object> props = new HashMap<>();
+
+                        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+                        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+                        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+                        KafkaProducer producer = new KafkaProducer<String, String>(props);
+
+                        ProducerRecord<String, String> message = new ProducerRecord<>(outputTopic, null, json);
+                        producer.send(message);
                     }
-                    recordArray.put(jsonObj);
-                    System.out.println(String.format("subreddit -> %s (%d posts)", record._2, record._1));
                 });
-                //Map<String, Integer> countsMap = counts.mapToPair(stringIntegerTuple2 -> stringIntegerTuple2.swap()).collectAsMap();
-
-
-                ObjectMapper objectMapper = new ObjectMapper();
-
-                String json = recordArray.toString();
-
-                if(json != null){
-                    Map<String, Object> props = new HashMap<>();
-
-                    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-                    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-                    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-                    KafkaProducer producer = new KafkaProducer<String, String>(props);
-
-                    ProducerRecord<String, String> message = new ProducerRecord<>("activeCommunitiesTopic", null, json);
-                    producer.send(message);
-                }
-            });
 
         // Start the computation
         jssc.start();
@@ -132,5 +140,6 @@ public class SparkConsumerService {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
     }
 }
