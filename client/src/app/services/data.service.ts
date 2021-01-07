@@ -2,26 +2,33 @@ import {Injectable} from '@angular/core';
 import {ConnectWebSocket} from "@ngxs/websocket-plugin";
 import {Observable} from "rxjs";
 import {KafkaState} from "../state/kafka.state";
-import {MyResult} from "../other/Entities";
+import {PostsSpeed, StreamData, StreamTypes, SubredditMention} from "../other/Entities";
 import {Select, Store} from "@ngxs/store";
+import {KafkaStreamHandlerService} from "./kafka-stream-handler.service";
 
 @Injectable({
   providedIn: 'root'
 })
 export class DataService {
-  public counter: number = 0;
-  public i = 0;
-  public numberOfPosts = 0;
   @Select(KafkaState.messages)
   public kafkaMessages$: Observable<string[]>
-  public results: MyResult[] = []
 
-  constructor(private store: Store) {
+
+  constructor(private store: Store, private kafkaStreamHandlerService: KafkaStreamHandlerService) {
     this.store.dispatch(new ConnectWebSocket())
     this.kafkaMessages$.subscribe(values => {
-      console.log("--------------RECEIVE---------")
-      console.log(values)
-      console.log("LENGTH:" + values.length)
+      if (typeof values[0] != "string") return;
+      // console.log("LENGTH:" + typeof values[0])
+      // console.log("typeof values: " + typeof values)
+      let value: StreamData = JSON.parse(values[0]);
+      console.log(value)
+      switch (value.type) {
+        case StreamTypes.REDDIT_MENTIONS: // "type == 'REDDIT_MENTIONS'"
+          this.kafkaStreamHandlerService.handleRedditMentions(value.data as SubredditMention);
+          break;
+        case StreamTypes.COUNT_STREAM: // "type == 'COUNT_STREAM'"
+          this.kafkaStreamHandlerService.handlePostsSpeed(value.data as PostsSpeed);
+      }
     }, error => {
       console.log(error)
     })
