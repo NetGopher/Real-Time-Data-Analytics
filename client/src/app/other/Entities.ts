@@ -1,6 +1,6 @@
-export class MyResult{
+export class SubredditMention{
   public subreddit:string
-  public mentions:number
+  public count:number
 }
 export class StreamData{
   public data: any;
@@ -8,6 +8,10 @@ export class StreamData{
 }
 export class StreamTypes{
   public static ERROR = "ERROR";
-  public static COUNT = "COUNT";
+  public static COUNT_STREAM = "COUNT_STREAM";
   public static REDDIT_MENTIONS = "REDDIT_MENTIONS";
+}
+export class PostsSpeed{
+  public count:number = 1
+  public duration:number = 0
 }
