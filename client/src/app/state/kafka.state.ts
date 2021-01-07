@@ -21,6 +21,7 @@ export class KafkaState {
   @Action(AddMessageAction)
   add(ctx: StateContext<KafkaStateModel>, action: AddMessageAction) {
     const state = ctx.getState();
-    ctx.setState({ messages: [ ...state.messages, action.message ] });
+    // ctx.setState({ messages: [ ...state.messages, action.message ] });
+    ctx.setState({ messages: [ action.message ] });
   }
 }
