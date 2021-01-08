@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {ConnectWebSocket} from "@ngxs/websocket-plugin";
-import {Observable} from "rxjs";
+import {Observable, Subject} from "rxjs";
 import {KafkaState} from "../state/kafka.state";
 import {PostsSpeed, StreamData, StreamTypes, SubredditMention} from "../other/Entities";
 import {Select, Store} from "@ngxs/store";
@@ -13,13 +13,10 @@ export class DataService {
   @Select(KafkaState.messages)
   public kafkaMessages$: Observable<string[]>
 
-
   constructor(private store: Store, private kafkaStreamHandlerService: KafkaStreamHandlerService) {
     this.store.dispatch(new ConnectWebSocket())
     this.kafkaMessages$.subscribe(values => {
       if (typeof values[0] != "string") return;
-      // console.log("LENGTH:" + typeof values[0])
-      // console.log("typeof values: " + typeof values)
       let value: StreamData = JSON.parse(values[0]);
       console.log(value)
       switch (value.type) {
@@ -28,7 +25,11 @@ export class DataService {
           break;
         case StreamTypes.COUNT_STREAM: // "type == 'COUNT_STREAM'"
           this.kafkaStreamHandlerService.handlePostsSpeed(value.data as PostsSpeed);
+          break;
+        default:
+          console.log(value.data)
       }
+
     }, error => {
       console.log(error)
     })

@@ -7,13 +7,23 @@
         </div>
         <div class="card-body">
           <div class="row">
-            <div class="col-12">
+            <div class="col-6">
               <div class="card">
                 <div class="card-header">
                   SPEED
                 </div>
                 <div class="card-body">
-                  <app-speed></app-speed>
+<!--                  optional Params: refreshInterval, transitionDuration-->
+                  <app-speed [dataObservable]="kafkaStreamHandler.postsSpeedObserver" ></app-speed>
+                </div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card">
+                <div class="card-header">
+                  SPEED
+                </div>
+                <div class="card-body">
                 </div>
               </div>
             </div>
@@ -21,7 +31,7 @@
         </div>
       </div>
     </div>
-  </div>
-  <!-- Styles -->
+    <!-- Styles -->
 
+  </div>
 </div>

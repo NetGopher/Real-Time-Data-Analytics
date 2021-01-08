@@ -1,4 +1,14 @@
-import {AfterViewInit, Component, Inject, NgZone, OnDestroy, OnInit, PLATFORM_ID} from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  Directive,
+  Inject,
+  Input,
+  NgZone,
+  OnDestroy,
+  OnInit,
+  PLATFORM_ID
+} from '@angular/core';
 import * as am4core from '@amcharts/amcharts4/core';
 import * as am4charts from '@amcharts/amcharts4/charts';
 import am4themes_animated from '@amcharts/amcharts4/themes/animated';
@@ -6,6 +16,7 @@ import {isPlatformBrowser} from "@angular/common";
 import {Axis} from "@amcharts/amcharts4/charts";
 import {DataService} from "../../../services/data.service";
 import {KafkaStreamHandlerService} from "../../../services/kafka-stream-handler.service";
+import {Observable} from "rxjs";
 
 @Component({
   selector: 'app-speed',
@@ -13,16 +24,19 @@ import {KafkaStreamHandlerService} from "../../../services/kafka-stream-handler.
   styleUrls: ['./speed.component.css']
 })
 export class SpeedComponent implements OnInit, OnDestroy, AfterViewInit {
-
+  @Input('dataObservable')
+  public dataObservable:Observable<number>;
   private chart: am4charts.XYChart;
-  private refreshInterval: number = 2000; //MILLISECOND
-  private transitionDuration: number = 1000; //MILLISECOND
-  private hand: any;
-
+  @Input('refreshInterval')
+  public refreshInterval: number = 2000; //MILLISECOND
+  @Input('transitionDuration')
+  public transitionDuration: number = 1000; //MILLISECOND
+  public static counterId:number = 0;
+  public headValue:number = 0;
   constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone, private dataService: DataService, private kafkaStreamHander: KafkaStreamHandlerService) {
   }
 
-  // Run the function only in the browser
+  randomIdValueString: string;
   browserOnly(f: (speedComponent: SpeedComponent) => void) {
     if (isPlatformBrowser(this.platformId)) {
       this.zone.runOutsideAngular(() => {
@@ -39,13 +53,14 @@ export class SpeedComponent implements OnInit, OnDestroy, AfterViewInit {
 // Themes end
 
 // create chart
-      let chart = am4core.create("chartdiv", am4charts.GaugeChart);
-      chart.hiddenState.properties.opacity = 0; // this makes initial fade in effect
-
-      chart.innerRadius = -25;
+      mySpeedComponent.chart = am4core.create("chartdiv_" + mySpeedComponent.randomIdValueString, am4charts.GaugeChart);
+      mySpeedComponent.chart.hiddenState.properties.opacity = 0; // this makes initial fade in effect
 
       // @ts-ignore
-      let axis: any = chart.xAxes.push(new am4charts.ValueAxis());
+      mySpeedComponent.chart.innerRadius = -25;
+
+      // @ts-ignore
+      let axis: any = mySpeedComponent.chart.xAxes.push(new am4charts.ValueAxis());
       axis.min = 0;
       axis.max = 100;
       axis.strictMinMax = true;
@@ -75,15 +90,16 @@ export class SpeedComponent implements OnInit, OnDestroy, AfterViewInit {
       range2.axisFill.fill = colorSet.getIndex(4);
       range2.axisFill.zIndex = -1;
 
-      let hand = chart.hands.push(new am4charts.ClockHand());
+      // @ts-ignore
+      let hand = mySpeedComponent.chart.hands.push(new am4charts.ClockHand());
 
 // using chart.setTimeout method as the timeout will be disposed together with a chart
-      chart.setTimeout(randomValue, 2000);
+       mySpeedComponent.chart.setTimeout(randomValue, 2000);
 
       function randomValue() {
-        console.log("CURRENT SPEED: " + mySpeedComponent.kafkaStreamHander.currentPostsSpeed.count)
-        hand.showValue(mySpeedComponent.kafkaStreamHander.currentPostsSpeed.count, mySpeedComponent.transitionDuration, am4core.ease.cubicOut);
-        chart.setTimeout(randomValue, mySpeedComponent.refreshInterval);
+        console.log("CURRENT SPEED: " + mySpeedComponent.headValue * 1)
+        hand.showValue(mySpeedComponent.headValue * 1, mySpeedComponent.transitionDuration, am4core.ease.cubicOut);
+        mySpeedComponent.chart.setTimeout(randomValue, mySpeedComponent.refreshInterval);
       }
     });
   }
@@ -99,5 +115,10 @@ export class SpeedComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnInit(): void {
+    this.randomIdValueString = `` + SpeedComponent.counterId;
+    SpeedComponent.counterId++;
+      this.dataObservable.subscribe(value => {
+        this.headValue = value;
+    });
   }
 }

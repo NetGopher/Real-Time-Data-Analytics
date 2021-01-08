@@ -1,10 +1,6 @@
 import {Component, OnInit} from '@angular/core';
-import {KafkaState} from "../../state/kafka.state";
-import {Select, Store} from "@ngxs/store";
-import {Observable} from "rxjs";
-import {ConnectWebSocket} from "@ngxs/websocket-plugin";
-import {MyResult} from "../../other/Entities";
 import {DataService} from "../../services/data.service";
+import {KafkaStreamHandlerService} from "../../services/kafka-stream-handler.service";
 @Component({
   selector: 'app-kafka-stream-consumer',
   templateUrl: './kafka-stream-consumer.component.html',
@@ -14,12 +10,13 @@ export class KafkaStreamConsumerComponent implements OnInit {
 
 
 
-  constructor(public dataService:DataService) {
+  constructor(public dataService:DataService, public kafkaStreamHandler:KafkaStreamHandlerService) {
   }
 
   ngOnInit(): void {
 
   }
+
 
 
 }
