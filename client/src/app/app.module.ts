@@ -9,6 +9,7 @@ import {NgxsWebsocketPluginModule} from "@ngxs/websocket-plugin";
 import {KafkaState} from "./state/kafka.state";
 import {NgxsModule} from "@ngxs/store";
 import { SpeedComponent } from './components/charts/speed/speed.component';
+import {FormsModule} from "@angular/forms";
 
 @NgModule({
   declarations: [
@@ -17,16 +18,17 @@ import { SpeedComponent } from './components/charts/speed/speed.component';
     KafkaStreamConsumerComponent,
     SpeedComponent
   ],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    NgxsModule.forRoot([
-      KafkaState
-    ]),
-    NgxsWebsocketPluginModule.forRoot({
-      url: 'ws://localhost:8080/websocket'
-    })
-  ],
+    imports: [
+        BrowserModule,
+        AppRoutingModule,
+        NgxsModule.forRoot([
+            KafkaState
+        ]),
+        NgxsWebsocketPluginModule.forRoot({
+            url: 'ws://localhost:8080/websocket'
+        }),
+        FormsModule
+    ],
   providers: [],
   bootstrap: [AppComponent]
 })
