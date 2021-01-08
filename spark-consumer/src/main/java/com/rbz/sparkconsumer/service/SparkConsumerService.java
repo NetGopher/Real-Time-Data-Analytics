@@ -46,6 +46,8 @@ public class SparkConsumerService {
     private final KafkaConsumerConfig kafkaConsumerConfig;
     private final Collection<String> topics;
 
+    private final Integer batchInterval=10;
+
     @Autowired
     public SparkConsumerService(SparkConf sparkConf,
                                 KafkaConsumerConfig kafkaConsumerConfig,
@@ -59,7 +61,7 @@ public class SparkConsumerService {
         log.debug("Running Spark Consumer Service..");
 
         // Create context with a 10 seconds batch interval
-        JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(10));
+        JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(batchInterval));
 
         // Create direct kafka stream with brokers and topics
         JavaInputDStream<ConsumerRecord<String, Submission>> submissions = KafkaUtils.createDirectStream(
@@ -110,9 +112,13 @@ public class SparkConsumerService {
                         System.out.println(String.format("subreddit -> %s (%d posts)", record._2, record._1));
                     });
 
+                    Map<String, Object> recordArrayobj = new HashMap<>();
+                    recordArrayobj.put("duration", batchInterval);
+                    recordArrayobj.put("results", recordArray);
+
                     Map<String, Object> results = new HashMap<>();
                     results.put("type", SteamType.REDDIT_MENTIONS);
-                    results.put("data", recordArray);
+                    results.put("data", recordArrayobj);
 
                     ObjectMapper objectMapper = new ObjectMapper();
 
