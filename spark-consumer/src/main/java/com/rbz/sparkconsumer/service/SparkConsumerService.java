@@ -114,7 +114,7 @@ public class SparkConsumerService {
 
                     Map<String, Object> recordArrayobj = new HashMap<>();
                     recordArrayobj.put("duration", batchInterval);
-                    recordArrayobj.put("results", recordArray);
+                    recordArrayobj.put("subredditMentions", recordArray);
 
                     Map<String, Object> results = new HashMap<>();
                     results.put("type", SteamType.REDDIT_MENTIONS);
