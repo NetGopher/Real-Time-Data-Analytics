@@ -14,6 +14,7 @@ import reactor.kafka.receiver.ReceiverOptions;
 import reactor.kafka.receiver.ReceiverRecord;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
 
@@ -51,14 +52,14 @@ public class KafkaServiceImpl implements KafkaService {
 //        kafkaProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 //        kafkaProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, AUTO_OFFSET_REST);
         kafkaProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
-        kafkaProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, "dick");
-        kafkaProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "fat");
+        kafkaProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, "dick1");
+        kafkaProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "fat1");
         kafkaProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         kafkaProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        kafkaProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        kafkaProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
         ReceiverOptions<String, String> receiverOptions = ReceiverOptions.create(kafkaProperties);
 
-        testTopicStream = createTopicCache(receiverOptions, "json-reddit");
+        testTopicStream = createTopicCache(receiverOptions, "reddit-json");
     }
 
 
@@ -68,8 +69,8 @@ public class KafkaServiceImpl implements KafkaService {
     }
 
     private <T, G> Flux<ReceiverRecord<T, G>> createTopicCache(ReceiverOptions<T, G> receiverOptions, String topicName) {
-        ReceiverOptions<T, G> options = receiverOptions.subscription(Collections.singleton(topicName));
+        ReceiverOptions<T, G> options = receiverOptions.subscription(Collections.singleton(topicName)).commitInterval(Duration.ofSeconds(10));
 
-        return KafkaReceiver.create(options).receive().cache();
+        return KafkaReceiver.create(options).receive().cache(Duration.ofSeconds(5));
     }
 }

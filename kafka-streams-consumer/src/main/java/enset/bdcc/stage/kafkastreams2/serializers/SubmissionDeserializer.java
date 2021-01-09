@@ -1,19 +1,17 @@
-package com.rbz.redditconsumer.serializers;
+package enset.bdcc.stage.kafkastreams2.serializers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.squareup.moshi.JsonAdapter;
-import com.squareup.moshi.Moshi;
 import net.dean.jraw.JrawUtils;
-import net.dean.jraw.databind.Enveloped;
 import net.dean.jraw.models.Submission;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
+import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Map;
-
-public class SubmissionDeserializer implements Deserializer {
+@Component
+public class SubmissionDeserializer implements Deserializer<Submission> {
     @Override
     public void configure(Map configs, boolean isKey) {
 
@@ -29,12 +27,10 @@ public class SubmissionDeserializer implements Deserializer {
             JSONObject jsonObject = new JSONObject(new String(bytes, StandardCharsets.UTF_8));
             jsonString = jsonObject.toString();
             data = submissionAdapter.fromJson(jsonString);
-            //System.out.println(data.toString());
-            return data;   
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
         }
+        return data;
     }
 
     @Override

@@ -17,6 +17,6 @@ export class PostsSpeed{
   public duration:number = 0
 }
 export class SubredditMentionBatch{
-  public subredditMentions:SubredditMention[] = [];
+  public data:SubredditMention[] = [];
   public duration:number = 0;
 }

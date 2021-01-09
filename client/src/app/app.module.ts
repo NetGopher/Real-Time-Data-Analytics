@@ -14,6 +14,7 @@ import { StreamSpeedComponent } from './components/spark-stream-consumer/stream-
 import { SparkStreamConsumerComponent } from './components/spark-stream-consumer/spark-stream-consumer.component';
 import { PopularCommunitiesComponent } from './components/spark-stream-consumer/popular-communities/popular-communities.component';
 import { DonutChartComponent } from './components/spark-stream-consumer/donut-chart/donut-chart.component';
+import { DonutComponent } from './components/charts/donut/donut.component';
 
 @NgModule({
   declarations: [
@@ -24,7 +25,8 @@ import { DonutChartComponent } from './components/spark-stream-consumer/donut-ch
     StreamSpeedComponent,
     SparkStreamConsumerComponent,
     PopularCommunitiesComponent,
-    DonutChartComponent
+    DonutChartComponent,
+    DonutComponent
   ],
     imports: [
         BrowserModule,
