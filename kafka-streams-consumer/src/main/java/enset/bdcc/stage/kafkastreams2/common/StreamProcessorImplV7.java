@@ -27,31 +27,37 @@ import java.util.concurrent.TimeUnit;
 @NoArgsConstructor
 @AllArgsConstructor
 
-//@Component
+@Component
 // PROBLEM: Heavy Data
-public class StreamProcessorImplV6 implements StreamProcessor {
+public class StreamProcessorImplV7 implements StreamProcessor {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public KStream<String, String> getSubredditMensionsStream(KStream<String, Submission> initialStream) {
-        return  initialStream
-                .map((KeyValueMapper<String, Submission, KeyValue<String, Long>>) (k, v) -> KeyValue.pair(v.getSubreddit(),1L)
+
+        KStream<String,Long> count_stream=
+                initialStream.map((KeyValueMapper<String, Submission, KeyValue<String, Long>>) (k, v) -> KeyValue.pair(v.getSubreddit(),1L)
                 )
                 .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
-                .windowedBy(TimeWindows.of(Duration.ofSeconds(6)).advanceBy(Duration.ofSeconds(6)))
-                .reduce(Long::sum)
-                .toStream()
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)))
+                .count()
+                        .toStream()
+                .map((windowed, aLong) -> KeyValue.pair(windowed.key(),aLong));
+               KStream<String,Long> count_bigger_than_one = count_stream
+                       .filter((key, countValue) -> countValue > 1)
+//                       .peek((key, countValue) -> System.out.println("count_bigger_than_one: ->" + key + ", count ->" + countValue))
+                       ;
+               KStream<String,Long> count_equals_one = count_stream
+                       .filter((key, countValue) -> countValue == 1)
+                       .map((windowed, aLong) -> KeyValue.pair("__Others__",1L))
+                       .groupByKey(Grouped.with(Serdes.String(),Serdes.Long()))
+                       .count()
+                       .toStream()
+//                       .peek((key, countValue) -> System.out.println("count_equals_one ->" + key + ", count ->" + countValue))
+                       ;
 
-                .map((key, value) -> {
-                            if(value == 1) return KeyValue.pair("__Others__", 1L);
-                            return KeyValue.pair(key.key(), value);
-                })
-                .groupByKey(Grouped.with(Serdes.String(),Serdes.Long()))
-                .reduce(Long::sum)
-                .toStream()
-                      .peek((s, aLong) -> {
-                    System.out.println("key -> " + s + ", value: " + aLong);
-                }).map(new KeyValueMapper<String, Long, KeyValue<String, String>>() {
+              return count_bigger_than_one.merge(count_equals_one)
+                    .map(new KeyValueMapper<String, Long, KeyValue<String, String>>() {
                     @SneakyThrows
                     @Override
                     public KeyValue<String, String> apply(String key, Long value) {
@@ -77,7 +83,6 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                     public String apply(String s, String newSubredditDataString, String reduceList) {
                         JsonMapper jsonMapper = new JsonMapper();
                         SubredditData newSubredditData = objectMapper.readValue(newSubredditDataString, SubredditData.class);
-                        jsonMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 //                        System.out.println("REDUCE_RESULT---->" + reduceList);
                         String valuesString = null;
                         try {
@@ -86,7 +91,7 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                             dataList.add(newSubredditData);
 //                            for (SubredditData v : dataList)
 //                                System.out.println(v);
-                            System.out.println("LENGTH of THAT SHIT--->" + dataList.size());
+//                            System.out.println("LENGTH of THAT SHIT--->" + dataList.size());
                             valuesString = jsonMapper.writeValueAsString(dataList.toArray());
 //                            System.out.println("VALUES STRING ----->" + valuesString);
                         } catch (JsonProcessingException e) {
@@ -97,18 +102,24 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                     }
                 }, Materialized.with(Serdes.String(), Serdes.String()))
                 .toStream()
-                .map(new KeyValueMapper<String, String, KeyValue<String, String>>() {
-                    @SneakyThrows
-                    @Override
-                    public KeyValue<String, String> apply(String key, String value) {
+                      .peek((s, s2) -> {
 
-                        List<SubredditData> subredditDataList = Arrays.asList(objectMapper.readValue(value, SubredditData[].class));
-                        SubredditDataHolder subredditDataHolder = new SubredditDataHolder(subredditDataList, Double.valueOf(String.valueOf(Common.WINDOW_SIZE)));
-                        Map<String, Object> resultMap = Common.addDataToStreamMap(StreamType.REDDIT_MENTIONS_BATCH, subredditDataHolder);
-                        String jsonString = Common.maptoJsonString(resultMap);
-                        return KeyValue.pair("Result_Batch", jsonString);
-                    }
-                });
+                          System.out.println("------------------------------------------");
+                          System.out.println("------------------------------------------");
+                          System.out.println(s + " --> " + s2);
+                      });
+//                .map(new KeyValueMapper<String, String, KeyValue<String, String>>() {
+//                    @SneakyThrows
+//                    @Override
+//                    public KeyValue<String, String> apply(String key, String value) {
+//
+//                        List<SubredditData> subredditDataList = Arrays.asList(objectMapper.readValue(value, SubredditData[].class));
+//                        SubredditDataHolder subredditDataHolder = new SubredditDataHolder(subredditDataList, Double.valueOf(String.valueOf(Common.WINDOW_SIZE)));
+//                        Map<String, Object> resultMap = Common.addDataToStreamMap(StreamType.REDDIT_MENTIONS_BATCH, subredditDataHolder);
+//                        String jsonString = Common.maptoJsonString(resultMap);
+//                        return KeyValue.pair("Result_Batch", jsonString);
+//                    }
+//                });
 
 
     }

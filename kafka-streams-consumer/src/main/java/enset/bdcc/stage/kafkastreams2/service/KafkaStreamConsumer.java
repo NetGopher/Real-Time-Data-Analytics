@@ -45,8 +45,6 @@ public class KafkaStreamConsumer {
 
         Topology topology = streamsBuilder.build();
         KafkaStreams kafkaStreams = new KafkaStreams(topology, kafkaStreamConfig.getKafkaStreamProperties());
-        kafkaStreams.cleanUp();
-
         kafkaStreams.start();
     }
 
