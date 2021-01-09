@@ -9,6 +9,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.common.utils.Java;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -79,7 +80,7 @@ public class SparkConsumerService {
             return !submission.value().isNsfw();
         });
 
-        clean_submissions
+         clean_submissions
                 .count()
                 .map(cnt -> "Clean subreddits in last 10 seconds (" + cnt + " total posts):")
                 .print();
@@ -97,8 +98,11 @@ public class SparkConsumerService {
                 .mapToPair(subreddit -> new Tuple2<>(subreddit, 1))
                 .reduceByKey((a, b) -> Integer.sum(a, b))
 
-                .mapToPair(stringIntegerTuple2 -> stringIntegerTuple2.swap())
+                .mapToPair(stringIntegerTuple2 -> {
+                    return stringIntegerTuple2.swap();
+                })
                 .foreachRDD(rrdd -> {
+                    recordArray.clear();
                     System.out.println("---------------------------------------------------------------");
                     List<Tuple2<Integer, String>> sorted;
                     JavaPairRDD<Integer, String> counts = rrdd.sortByKey(false);
@@ -119,24 +123,22 @@ public class SparkConsumerService {
                     Map<String, Object> results = new HashMap<>();
                     results.put("type", SteamType.REDDIT_MENTIONS);
                     results.put("data", recordArrayobj);
-
+                    System.out.println("results: " + results);
                     ObjectMapper objectMapper = new ObjectMapper();
 
                     String json = null;
 
                     json = objectMapper.writeValueAsString(results);
 
-                    if(json != null){
-                        Map<String, Object> props = new HashMap<>();
+                    Map<String, Object> props = new HashMap<>();
 
-                        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-                        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-                        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-                        KafkaProducer producer = new KafkaProducer<String, String>(props);
+                    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+                    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+                    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+                    KafkaProducer producer = new KafkaProducer<String, String>(props);
 
-                        ProducerRecord<String, String> message = new ProducerRecord<>(outputTopic, null, json);
-                        producer.send(message);
-                    }
+                    ProducerRecord<String, String> message = new ProducerRecord<>(outputTopic, null, json);
+                    producer.send(message);
                 });
 
         // Start the computation
