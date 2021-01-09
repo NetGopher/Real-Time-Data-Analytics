@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {PostsSpeed, SubredditMention} from "../other/Entities";
+import {PostsSpeed, SubredditMention, SubredditMentionBatch} from "../other/Entities";
 import {BehaviorSubject, Observable} from "rxjs";
 
 @Injectable({
@@ -9,6 +9,7 @@ export class SparkStreamHandlerService {
 
   public counter: number = 0;
   public i = 0;
+  public popularCommunitiesObserver: BehaviorSubject<SubredditMention[]> = new BehaviorSubject<SubredditMention[]>(null);
   public results: SubredditMention[] = []
   public postsSpeedList: PostsSpeed[] = [];
   public postsSpeedObserver: BehaviorSubject<number> = new BehaviorSubject<number>(1);
@@ -16,13 +17,10 @@ export class SparkStreamHandlerService {
 
   constructor() { }
 
-  handleRedditMentions(value: SubredditMention) {
-    const shit: Observable<number> = new Observable((observer) => {
-      observer.next(5)
-    });
-    shit.pipe()
+  handleRedditMentions(subredditMentionBatch: SubredditMentionBatch) {
+    //console.log("New Data: " + JSON.stringify(subredditMentionBatch.subredditMentions))
+    this.popularCommunitiesObserver.next(subredditMentionBatch.subredditMentions);
   }
-
   handlePostsSpeed(value: PostsSpeed) {
     this.postsSpeedObserver.next(value.count);
     console.log("New Speed: " + value.count)

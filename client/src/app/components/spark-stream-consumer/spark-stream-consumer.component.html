@@ -1,0 +1,52 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          Spark Streaming
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col">
+              <div class="card">
+                <div class="card-header">
+                  Stream Speed
+                </div>
+                <div class="card-body">
+<!--                  optional Params: refreshInterval, transitionDuration-->
+                  <app-stream-speed [dataObservable]="sparkStreamHandler.postsSpeedObserver" ></app-stream-speed>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-3">
+            <div class="col">
+              <div class="card">
+                <div class="card-header">
+                  Active Communities
+                </div>
+                <div class="card-body">
+                  <app-popular-communities [dataObservable]="sparkStreamHandler.popularCommunitiesObserver"></app-popular-communities>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-3">
+            <div class="col">
+              <div class="card">
+                <div class="card-header">
+                  Donut Chart
+                </div>
+                <div class="card-body">
+                  <app-donut-chart [dataObservable]="sparkStreamHandler.popularCommunitiesObserver"></app-donut-chart>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Styles -->
+
+  </div>
+</div>

@@ -13,9 +13,11 @@ import org.apache.kafka.common.utils.Java;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaInputDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka010.ConsumerStrategies;
 import org.apache.spark.streaming.kafka010.KafkaUtils;
@@ -47,7 +49,7 @@ public class SparkConsumerService {
     private final KafkaConsumerConfig kafkaConsumerConfig;
     private final Collection<String> topics;
 
-    private final Integer batchInterval=10;
+    private final Integer batchInterval=60;
 
     @Autowired
     public SparkConsumerService(SparkConf sparkConf,
@@ -97,16 +99,25 @@ public class SparkConsumerService {
         posts_subreddit
                 .mapToPair(subreddit -> new Tuple2<>(subreddit, 1))
                 .reduceByKey((a, b) -> Integer.sum(a, b))
-
-                .mapToPair(stringIntegerTuple2 -> {
-                    return stringIntegerTuple2.swap();
-                })
+                .mapToPair(stringIntegerTuple2 -> stringIntegerTuple2.swap())
                 .foreachRDD(rrdd -> {
                     recordArray.clear();
                     System.out.println("---------------------------------------------------------------");
                     List<Tuple2<Integer, String>> sorted;
                     JavaPairRDD<Integer, String> counts = rrdd.sortByKey(false);
-                    sorted = counts.collect();
+
+                    JavaPairRDD<Integer, String> count_bigger_than_one = counts.filter((Function<Tuple2<Integer, String>, Boolean>) integerStringTuple2 -> integerStringTuple2._1 > 1);
+                    JavaPairRDD<Integer, String> count_equals_one = counts.filter((Function<Tuple2<Integer, String>, Boolean>) integerStringTuple2 -> integerStringTuple2._1 == 1);
+                    System.out.println("count_bigger_than_one count: "+ count_bigger_than_one.count());
+                    System.out.println("count_equals_zero: "+ count_equals_one.count());
+
+
+                    Map<String, Object> count_equals_one_obj =  new HashMap<>();
+                        count_equals_one_obj.put("subreddit", "__OTHERS__");
+                        count_equals_one_obj.put("count", count_equals_one.count());
+                    recordArray.add(count_equals_one_obj);
+
+                    sorted = count_bigger_than_one.collect();
                     sorted.forEach( record -> {
                         Map<String, Object> obj =  new HashMap<>();
                         obj.put("subreddit", record._2);
