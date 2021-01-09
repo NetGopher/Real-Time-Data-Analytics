@@ -10,13 +10,15 @@ import {KafkaState} from "./state/kafka.state";
 import {NgxsModule} from "@ngxs/store";
 import { SpeedComponent } from './components/charts/speed/speed.component';
 import {FormsModule} from "@angular/forms";
+import { DonutComponent } from './components/charts/donut/donut.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     HomeComponent,
     KafkaStreamConsumerComponent,
-    SpeedComponent
+    SpeedComponent,
+    DonutComponent
   ],
     imports: [
         BrowserModule,

@@ -25,18 +25,20 @@ import {Observable} from "rxjs";
 })
 export class SpeedComponent implements OnInit, OnDestroy, AfterViewInit {
   @Input('dataObservable')
-  public dataObservable:Observable<number>;
-  private chart: am4charts.XYChart;
+  public dataObservable: Observable<number>;
+  private chart: am4charts.GaugeChart;
   @Input('refreshInterval')
   public refreshInterval: number = 2000; //MILLISECOND
   @Input('transitionDuration')
   public transitionDuration: number = 1000; //MILLISECOND
-  public static counterId:number = 0;
-  public headValue:number = 0;
+  public static counterId: number = 0;
+  public headValue: number = 0;
+
   constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone, private dataService: DataService, private kafkaStreamHander: KafkaStreamHandlerService) {
   }
 
   randomIdValueString: string;
+
   browserOnly(f: (speedComponent: SpeedComponent) => void) {
     if (isPlatformBrowser(this.platformId)) {
       this.zone.runOutsideAngular(() => {
@@ -53,10 +55,9 @@ export class SpeedComponent implements OnInit, OnDestroy, AfterViewInit {
 // Themes end
 
 // create chart
-      mySpeedComponent.chart = am4core.create("chartdiv_" + mySpeedComponent.randomIdValueString, am4charts.GaugeChart);
+      mySpeedComponent.chart = am4core.create("speedometer_chart_" + mySpeedComponent.randomIdValueString, am4charts.GaugeChart);
       mySpeedComponent.chart.hiddenState.properties.opacity = 0; // this makes initial fade in effect
 
-      // @ts-ignore
       mySpeedComponent.chart.innerRadius = -25;
 
       // @ts-ignore
@@ -92,12 +93,11 @@ export class SpeedComponent implements OnInit, OnDestroy, AfterViewInit {
 
       // @ts-ignore
       let hand = mySpeedComponent.chart.hands.push(new am4charts.ClockHand());
-
 // using chart.setTimeout method as the timeout will be disposed together with a chart
-       mySpeedComponent.chart.setTimeout(randomValue, 2000);
+      mySpeedComponent.chart.setTimeout(randomValue, 2000);
 
       function randomValue() {
-        console.log("CURRENT SPEED: " + mySpeedComponent.headValue * 1)
+        // console.log("CURRENT SPEED: " + mySpeedComponent.headValue * 1)
         hand.showValue(mySpeedComponent.headValue * 1, mySpeedComponent.transitionDuration, am4core.ease.cubicOut);
         mySpeedComponent.chart.setTimeout(randomValue, mySpeedComponent.refreshInterval);
       }
@@ -117,8 +117,8 @@ export class SpeedComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnInit(): void {
     this.randomIdValueString = `` + SpeedComponent.counterId;
     SpeedComponent.counterId++;
-      this.dataObservable.subscribe(value => {
-        this.headValue = value;
+    this.dataObservable.subscribe(value => {
+      this.headValue = value;
     });
   }
 }
