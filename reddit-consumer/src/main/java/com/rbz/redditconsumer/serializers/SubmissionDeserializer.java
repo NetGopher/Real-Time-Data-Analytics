@@ -30,10 +30,11 @@ public class SubmissionDeserializer implements Deserializer {
             jsonString = jsonObject.toString();
             data = submissionAdapter.fromJson(jsonString);
             //System.out.println(data.toString());
+            return data;   
         } catch (Exception e) {
             e.printStackTrace();
+            return null;
         }
-        return data;
     }
 
     @Override
