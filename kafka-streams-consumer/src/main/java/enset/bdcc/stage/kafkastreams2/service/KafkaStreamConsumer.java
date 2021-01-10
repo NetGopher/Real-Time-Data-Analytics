@@ -34,7 +34,6 @@ public class KafkaStreamConsumer {
     private KafkaStreamConfig kafkaStreamConfig;
     @Autowired
     private StreamProcessor streamProcessor;
-
     public void start() {
 
         StreamsBuilder streamsBuilder = new StreamsBuilder();

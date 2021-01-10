@@ -9,7 +9,7 @@ import java.util.Map;
 
 public class Common {
     private static JsonMapper jsonMapper = new JsonMapper();
-    public static long WINDOW_SIZE = 6;
+    public static long WINDOW_SIZE = 10L;
     public static String maptoJsonString(Object object) {
         String jsonString = null;
         try {
