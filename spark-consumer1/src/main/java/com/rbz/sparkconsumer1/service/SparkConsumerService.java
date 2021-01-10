@@ -42,7 +42,7 @@ public class SparkConsumerService {
     private final Collection<String> topics;
 
     //in seconds
-    private Integer batchInterval = 60;
+    private Integer batchInterval = 3;
 
     @Autowired
     public SparkConsumerService(SparkConf sparkConf,
@@ -56,7 +56,7 @@ public class SparkConsumerService {
     public void run(){
         log.debug("Running Spark Consumer Service..");
 
-        // Create context with a 60 second batch interval
+        // Create context with a 1 second batch interval
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(batchInterval));
 
         // Create direct kafka stream with brokers and topics

@@ -23,6 +23,9 @@ public class KafkaConsumerConfig {
     @Value(value = "${spring.kafka.consumer.group-id}")
     private String groupID;
 
+    @Value(value = "${spring.kafka.consumer.client-id}")
+    private String clientID;
+
     //Consumer Configuration
     @Bean
     public Map<String, Object> consumerConfigs(){
@@ -34,9 +37,9 @@ public class KafkaConsumerConfig {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, SubmissionDeserializer.class);
 
         // automatically reset the offset to the earliest offset
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
 
-        props.put(ConsumerConfig.CLIENT_ID_CONFIG, "earliest");
+        props.put(ConsumerConfig.CLIENT_ID_CONFIG, clientID);
 
         return props;
     }
