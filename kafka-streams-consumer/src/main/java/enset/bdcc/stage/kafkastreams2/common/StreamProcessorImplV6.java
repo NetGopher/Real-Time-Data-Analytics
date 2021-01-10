@@ -31,12 +31,14 @@ import java.util.concurrent.TimeUnit;
 // PROBLEM: Heavy Data
 @Component
 public class StreamProcessorImplV6 implements StreamProcessor {
-    @Autowired
-    private ObjectMapper objectMapper;
+
+    private JsonMapper objectMapper = new JsonMapper();
+    private JsonMapper jsonMapper = new JsonMapper();
 
     @Override
     public KStream<String, String> getSubredditMensionsStream(KStream<String, Submission> initialStream) {
-        initialStream
+
+        return initialStream
 //                .filter((s, submission) -> !submission.isNsfw())
                 .map((KeyValueMapper<String, Submission, KeyValue<String, Long>>) (k, v) -> KeyValue.pair(v.getSubreddit(), 1L))
                 //;
@@ -55,93 +57,77 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                 .reduce(Long::sum)
                 .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.WINDOW_SIZE), Suppressed.BufferConfig.unbounded()))
                 .toStream()
-                .peek((s, aLong) -> {
-                            System.out.println("key -> " + s.key() + ", value: " + aLong);
-                        }
-                );
-
-
-//                .groupBy((key, value) -> eventKey(value), Grouped.with(Serdes.String(), iotEventSerde()))
-                /*.groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
-                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)).advanceBy(Duration.ofSeconds(Common.WINDOW_SIZE)))
-                .count()
-                 .toStream()
-                .map((key, value) -> {
-//                    if (value == 1L) return KeyValue.pair("__Others__", 1L);
-                    return KeyValue.pair(key.key(), value);
-                })
-                .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
-                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)).advanceBy(Duration.ofSeconds(Common.WINDOW_SIZE)))
-                .reduce(Long::sum)
-                .toStream()
-                .peek((s, aLong) -> {
-                    System.out.println("key -> " + s.key() + ", value: " + aLong);
-                }
-                );*/
-
-
-        return initialStream
-                .filter((s, submission) -> !submission.isNsfw())
-                .map((KeyValueMapper<String, Submission, KeyValue<String, String>>) (k, v) -> KeyValue.pair(v.getSubreddit(), String.valueOf(1L))
-                );
-//                .map(new KeyValueMapper<Windowed<String>, Long, KeyValue<String, String>>() {
-//                    @SneakyThrows
-//                    @Override
-//                    public KeyValue<Windowed<String>, String> apply(String key, Long value) {
-//                        SubredditData subredditData = new SubredditData();
-//                        subredditData.setSubreddit(key);
-//                        subredditData.setCount(value);
-//                        //System.out.println("key -> " + key + ", value: " + value);
-//                        return KeyValue.pair("group", objectMapper.writeValueAsString(subredditData));
-//                    }
-//                }).groupByKey(Grouped.with(Serdes.String(), Serdes.String()))
-//                .aggregate(new Initializer<String>() {
-//                    @SneakyThrows
-//                    @Override
-//                    public String apply() {
-//                        List<SubredditData> subredditDataList = new ArrayList<>();
-//                        JsonMapper jsonMapper = new JsonMapper();
-//                        String jsonResultString = jsonMapper.writeValueAsString(subredditDataList);
-////                        System.out.println("RESULT------>" + jsonResultString);
-//                        return jsonResultString;
-//                    }
-//                }, new Aggregator<String, String, String>() {
-//                    @SneakyThrows
-//                    @Override
-//                    public String apply(String s, String newSubredditDataString, String reduceList) {
-//                        JsonMapper jsonMapper = new JsonMapper();
-//                        SubredditData newSubredditData = objectMapper.readValue(newSubredditDataString, SubredditData.class);
-//                        jsonMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-////                        System.out.println("REDUCE_RESULT---->" + reduceList);
-//                        String valuesString = null;
-//                        try {
-//                            SubredditData[] values = jsonMapper.readValue(reduceList, SubredditData[].class);
-//                            List<SubredditData> dataList = new ArrayList<>(Arrays.asList(values));
-//                            dataList.add(newSubredditData);
-////                            for (SubredditData v : dataList)
-////                                System.out.println(v);
-//                            valuesString = jsonMapper.writeValueAsString(dataList.toArray());
-////                            System.out.println("VALUES STRING ----->" + valuesString);
-//                        } catch (JsonProcessingException e) {
-//                            e.printStackTrace();
-//
+//                .peek((s, aLong) -> {
+//                            System.out.println("key -> " + s.key() + ", value: " + aLong);
 //                        }
-//                        return valuesString;
+//                )
+                .map(new KeyValueMapper<Windowed<String>, Long, KeyValue<String, String>>() {
+                    @SneakyThrows
+                    @Override
+                    public KeyValue<String, String> apply(Windowed<String> windowed, Long aLong) {
+                        return new KeyValue<String, String>("__data__", objectMapper.writeValueAsString(new SubredditData(windowed.key(), aLong)));
+                    }
+                })
+//                .peek((key, value) -> {
+//                    try {
+//                        SubredditData subredditData = objectMapper.readValue(value,SubredditData.class);
+//                        System.out.println("key -> " + key + ", value: " + subredditData);
+//                    } catch (JsonProcessingException e) {
+//                        e.printStackTrace();
 //                    }
-//                }, Materialized.with(Serdes.String(), Serdes.String()))
-//                .toStream()
-//                .map(new KeyValueMapper<String, String, KeyValue<String, String>>() {
-//                    @SneakyThrows
-//                    @Override
-//                    public KeyValue<String, String> apply(String key, String value) {
-//                        List<SubredditData> subredditDataList = Arrays.asList(objectMapper.readValue(value, SubredditData[].class));
-//                        SubredditDataHolder subredditDataHolder = new SubredditDataHolder(subredditDataList, Double.valueOf(String.valueOf(Common.WINDOW_SIZE)));
-//                        Map<String, Object> resultMap = Common.addDataToStreamMap(StreamType.REDDIT_MENTIONS_BATCH, subredditDataHolder);
-//                        String jsonString = Common.maptoJsonString(resultMap);
-//                        //System.out.println(jsonString);
-//                        return KeyValue.pair("Result_Batch", jsonString);
-//                    }
-//                });
+//                        }
+//                )
+//
+                .groupByKey(Grouped.with(Serdes.String(), Serdes.String()))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)).advanceBy(Duration.ofSeconds(Common.WINDOW_SIZE)))
+
+                .aggregate(new Initializer<String>() {
+
+                    @SneakyThrows
+                    @Override
+                    public String apply() {
+                        //                        SubredditData subredditData = new SubredditData();
+//                        subredditData.setSubreddit("test");
+//                        subredditData.setCount(5L);
+                        List<SubredditData> subredditDataList = new ArrayList<>();
+//                        subredditDataList.add(subredditData);
+                        String jsonResultString =  jsonMapper.writeValueAsString(subredditDataList);
+//                        System.out.println("RESULT------>" + jsonResultString);
+                        return  jsonResultString;
+                    }
+                }, new Aggregator<String, String, String>() {
+                    @SneakyThrows
+                    @Override
+                    public String apply(String key, String value, String aggregateValue) {
+                        SubredditData newSubredditData = objectMapper.readValue(value, SubredditData.class);
+                        String valuesString = null;
+                        try {
+                            SubredditData[] values = jsonMapper.readValue(aggregateValue, SubredditData[].class);
+                            List<SubredditData> dataList = new ArrayList<>(Arrays.asList(values));
+                            dataList.add(newSubredditData);
+                            valuesString = jsonMapper.writeValueAsString(dataList.toArray());
+                        } catch (JsonProcessingException e) {
+                            e.printStackTrace();
+                                                    List<SubredditData> subredditDataList = new ArrayList<>();
+                        return objectMapper.writeValueAsString(subredditDataList);
+
+                        }
+                        return valuesString;
+
+
+                    }
+                }, Materialized.with(Serdes.String(), Serdes.String()))
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.WINDOW_SIZE), Suppressed.BufferConfig.unbounded()))
+                .toStream()
+                .map(new KeyValueMapper<Windowed<String>, String, KeyValue<String,String>>() {
+                    @SneakyThrows
+                    @Override
+                    public KeyValue<String,String> apply(Windowed<String> windowed, String s) {
+                         SubredditData[] values = jsonMapper.readValue(s, SubredditData[].class);
+                            List<SubredditData> dataList = new ArrayList<>(Arrays.asList(values));
+                        return new KeyValue<>(windowed.key(), Common.maptoJsonString(Common.addDataToStreamMap(StreamType.REDDIT_MENTIONS_BATCH, values)));
+                    }
+                });
 
 
     }

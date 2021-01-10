@@ -72,6 +72,7 @@ public class StreamProcessorImplV7 implements StreamProcessor {
                     @SneakyThrows
                     @Override
                     public String apply() {
+
                         List<SubredditData> subredditDataList = new ArrayList<>();
                         JsonMapper jsonMapper = new JsonMapper();
                         String jsonResultString = jsonMapper.writeValueAsString(subredditDataList);
