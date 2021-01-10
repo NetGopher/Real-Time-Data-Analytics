@@ -9,7 +9,9 @@ export class KafkaStreamHandlerService {
   public counter: number = 0;
   public i = 0;
   public subredditMentions: SubredditMention[] = []
+  public subredditPostsProportion: SubredditMention[] = []
   public subredditMentionsObserver: BehaviorSubject<SubredditMention[]> = new BehaviorSubject<SubredditMention[]>(null);
+  public subredditPostsProportionObserver: BehaviorSubject<SubredditMention[]> = new BehaviorSubject<SubredditMention[]>(null);
   public postsSpeedList: PostsSpeed[] = [];
   public postsSpeedObserver: BehaviorSubject<number> = new BehaviorSubject<number>(1);
 
@@ -30,14 +32,27 @@ export class KafkaStreamHandlerService {
   }
 
   handleRedditMentionsBatch(data: SubredditMentionBatch) {
-    let array:any[] = [];
-    for (const value of data.data) {
-          array.push({
-            "subreddit":value.subreddit,
-            "count":value.count
-          })
-    }
-    this.subredditMentions = array;
-    this.subredditMentionsObserver.next(array);
+    // let array:any[] = [];
+    // console.log(data);
+    // for (const value of data.data) {
+    //       array.push({
+    //         "subreddit":value.subreddit,
+    //         "count":value.count
+    //       })
+    // }
+    this.subredditMentions = data.data;
+    this.subredditMentionsObserver.next(data.data);
+  }
+    handleRedditPostsProportion(data: SubredditMentionBatch) {
+    // let array:any[] = [];
+    // console.log(data);
+    // for (const value of data.data) {
+    //       array.push({
+    //         "subreddit":value.subreddit,
+    //         "count":value.count
+    //       })
+    // }
+    this.subredditPostsProportion = data.data;
+    this.subredditPostsProportionObserver.next(data.data);
   }
 }

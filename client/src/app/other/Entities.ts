@@ -11,6 +11,7 @@ export class StreamTypes{
   public static COUNT_STREAM = "COUNT_STREAM";
   public static REDDIT_MENTIONS = "REDDIT_MENTIONS";
   public static REDDIT_MENTIONS_BATCH = "REDDIT_MENTIONS_BATCH";
+  public static REDDIT_POSTS_PROPORTION = "REDDIT_POSTS_PROPORTION";
 }
 export class PostsSpeed{
   public count:number = 1

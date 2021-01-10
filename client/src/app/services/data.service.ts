@@ -26,6 +26,12 @@ export class DataService {
         case StreamTypes.REDDIT_MENTIONS_BATCH: // "type == 'REDDIT_MENTIONS'"
           this.kafkaStreamHandlerService.handleRedditMentionsBatch(value.data as SubredditMentionBatch);
           break;
+        case StreamTypes.REDDIT_POSTS_PROPORTION: // "type == 'REDDIT_MENTIONS'"
+          this.kafkaStreamHandlerService.handleRedditPostsProportion(value.data as SubredditMentionBatch);
+          break;
+        case StreamTypes.COUNT_STREAM: // "type == 'COUNT_STREAM'"
+          this.kafkaStreamHandlerService.handlePostsSpeed(value.data as PostsSpeed);
+          break;
         case StreamTypes.COUNT_STREAM: // "type == 'COUNT_STREAM'"
           this.kafkaStreamHandlerService.handlePostsSpeed(value.data as PostsSpeed);
           break;

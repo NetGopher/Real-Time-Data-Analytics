@@ -7,24 +7,38 @@
         </div>
         <div class="card-body">
           <div class="row">
-            <div class="col-6">
+            <div class="col-8 offset-2">
               <div class="card">
                 <div class="card-header">
                   SPEED
                 </div>
                 <div class="card-body">
-<!--                  optional Params: refreshInterval, transitionDuration-->
-                  <app-speed [dataObservable]="kafkaStreamHandler.postsSpeedObserver" ></app-speed>
+                  <!--                  optional Params: refreshInterval, transitionDuration-->
+                  <app-speed [dataObservable]="kafkaStreamHandler.postsSpeedObserver"></app-speed>
                 </div>
               </div>
             </div>
-            <div class="col-6">
+            <div class="col-10 offset-1">
               <div class="card">
                 <div class="card-header">
                   Donut
                 </div>
                 <div class="card-body">
-<!--                  <app-donut [dataObservable]="kafkaStreamHandler.subredditMentionsObserver" [categoryProperty]="'subreddit'" [valueProperty]="'count'" [initialData]="kafkaStreamHandler.subredditMentions"></app-donut>-->
+                  <app-donut [dataObservable]="kafkaStreamHandler.subredditMentionsObserver"
+                             [categoryProperty]="'subreddit'" [valueProperty]="'count'"
+                             [initialData]="kafkaStreamHandler.subredditMentions"></app-donut>
+                </div>
+              </div>
+            </div>
+            <div class="col-10 offset-1">
+              <div class="card">
+                <div class="card-header">
+                  Subreddit posts proportion
+                </div>
+                <div class="card-body">
+                  <app-donut [dataObservable]="kafkaStreamHandler.subredditPostsProportionObserver"
+                             [categoryProperty]="'subreddit'" [valueProperty]="'count'"
+                             [initialData]="kafkaStreamHandler.subredditPostsProportion"></app-donut>
                 </div>
               </div>
             </div>

@@ -39,7 +39,8 @@ export class DonutComponent implements OnInit, OnDestroy, AfterViewInit {
   public static counterId: number = 0;
   @Input('initialData')
   public newData: any[] = [];
-  public headValue: number = 0;
+  public oldData: any[] = [];
+
   private triggerChange: boolean = false;
 
   constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone, private dataService: DataService, private kafkaStreamHander: KafkaStreamHandlerService) {
@@ -61,15 +62,10 @@ export class DonutComponent implements OnInit, OnDestroy, AfterViewInit {
       // Themes begin
       am4core.useTheme(am4themes_animated);
 // Themes end
-      myDonutComponent.chart = am4core.create("donut_chart_", am4charts.PieChart);
+      myDonutComponent.chart = am4core.create("donut_chart_" + myDonutComponent.randomIdValueString, am4charts.PieChart);
 
 // Add data
-      myDonutComponent.chart.data = [
-        {
-          'subreddit': 'shit',
-          'count': 1
-        }
-      ]
+      myDonutComponent.chart.data = myDonutComponent.newData;
 
 // Set inner radius
       myDonutComponent.chart.innerRadius = am4core.percent(50);
@@ -90,33 +86,39 @@ export class DonutComponent implements OnInit, OnDestroy, AfterViewInit {
       pieSeries.hiddenState.properties.endAngle = -90;
       pieSeries.hiddenState.properties.startAngle = -90;
 
+
+      myDonutComponent.chart.setTimeout(randomValue, myDonutComponent.refreshInterval);
       myDonutComponent.dataObservable.subscribe((values) => {
+
         // console.log("Changed --->");
         // console.log(values)
         if (!values) {
-          values = [];
+          myDonutComponent.triggerChange = false;
+          return;
+        }
+        if (JSON.stringify(values) != JSON.stringify(myDonutComponent.newData)) {
           myDonutComponent.triggerChange = true;
-        }
-        myDonutComponent.newData = [];
-        for (let i = 0; i < values.length && i < 10; i++) {
-          let value = values[i];
-          myDonutComponent.newData.push(value);
-        }
+          myDonutComponent.newData = values;
+        }else myDonutComponent.triggerChange = false;
+        // for (let i = 0; i < values.length && i < 10; i++) {
+        //   let value = values[i];
+        //   myDonutComponent.newData.push(value);
+        // }
       });
-      myDonutComponent.chart.setTimeout(randomValue, myDonutComponent.refreshInterval);
 
       function randomValue() {
-        //   pieSeries.hide(myDonutComponent.transitionDuration);
-        //   setTimeout(() => {
-        if (myDonutComponent.triggerChange){
-          myDonutComponent.chart.data = myDonutComponent.newData;
+        if (myDonutComponent.triggerChange) {
           myDonutComponent.triggerChange = false;
-        }
-        //     // pieSeries.show(myDonutComponent.transitionDuration);
-        //     pieSeries.reinit();
-        //     myDonutComponent.chart.setTimeout(randomValue, myDonutComponent.refreshInterval);
-        //   }, myDonutComponent.transitionDuration + 600);
-        //   //
+          pieSeries.hide(myDonutComponent.transitionDuration / 2);
+          setTimeout(() => {
+            myDonutComponent.chart.data = myDonutComponent.newData;
+            // pieSeries.show(myDonutComponent.transitionDuration);
+            pieSeries.show(myDonutComponent.transitionDuration / 2);
+            myDonutComponent.chart.setTimeout(randomValue, myDonutComponent.refreshInterval);
+          }, myDonutComponent.transitionDuration / 2 + 1000);
+        } else
+          myDonutComponent.chart.setTimeout(randomValue, myDonutComponent.refreshInterval);
+        //
       }
     });
   }
