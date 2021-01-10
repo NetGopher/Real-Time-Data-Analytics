@@ -16,4 +16,8 @@ public class SubredditDataHolder {
     @JsonProperty("data")
     private List<SubredditData> subredditMentions = new ArrayList<>();
     private Double duration = 0d;
+    public SubredditDataHolder add(SubredditData s) {
+        subredditMentions.add(s);
+        return this;
+    }
 }

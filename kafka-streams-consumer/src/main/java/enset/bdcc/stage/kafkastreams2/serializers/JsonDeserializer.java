@@ -11,9 +11,6 @@ public class JsonDeserializer<T> implements Deserializer<T> {
 
     private Class<T> tClass;
 
-    public JsonDeserializer() {
-    }
-
     public JsonDeserializer(Class<T> tClass) {
         this.tClass = tClass;
     }

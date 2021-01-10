@@ -2,6 +2,7 @@ package enset.bdcc.stage.kafkastreams2.serializers;
 
 import enset.bdcc.stage.kafkastreams2.common.DataMapList;
 import enset.bdcc.stage.kafkastreams2.common.SubredditData;
+import enset.bdcc.stage.kafkastreams2.common.SubredditDataHolder;
 import net.dean.jraw.models.Submission;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
@@ -29,6 +30,12 @@ public final class CustomSerdes {
             super(new JsonSerializer<SubredditData>(), new JsonDeserializer<>(SubredditData.class));
         }
     }
+     public static final class SubredditDataHolderSerde extends Serdes.WrapperSerde<SubredditDataHolder>{
+
+        public SubredditDataHolderSerde() {
+            super(new JsonSerializer<SubredditDataHolder>(), new JsonDeserializer<>(SubredditDataHolder.class));
+        }
+    }
 
 
     public static Serde<Submission> SubmissionSerde() {
@@ -39,6 +46,9 @@ public final class CustomSerdes {
     }
     public static Serde<SubredditData> SubredditDataSerde() {
         return new CustomSerdes.SubredditDataSerde();
+    }
+    public static Serde<SubredditDataHolder> SubredditDataHolderSerde() {
+        return new CustomSerdes.SubredditDataHolderSerde();
     }
 
 }

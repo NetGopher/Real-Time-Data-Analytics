@@ -34,7 +34,6 @@ public class KafkaStreamConsumer {
     private KafkaStreamConfig kafkaStreamConfig;
     @Autowired
     private StreamProcessor streamProcessor;
-
     public void start() {
 
         StreamsBuilder streamsBuilder = new StreamsBuilder();
@@ -45,8 +44,6 @@ public class KafkaStreamConsumer {
 
         Topology topology = streamsBuilder.build();
         KafkaStreams kafkaStreams = new KafkaStreams(topology, kafkaStreamConfig.getKafkaStreamProperties());
-        kafkaStreams.cleanUp();
-
         kafkaStreams.start();
     }
 
