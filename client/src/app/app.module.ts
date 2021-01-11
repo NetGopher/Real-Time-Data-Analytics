@@ -3,30 +3,32 @@ import { AppRoutingModule } from './app-routing/app-routing.module';
 import { NgModule } from '@angular/core';
 
 import { AppComponent } from './app.component';
-import { HomeComponent } from './components/home/home.component';
-import { KafkaStreamConsumerComponent } from './components/kafka-stream-consumer/kafka-stream-consumer.component';
 import {NgxsWebsocketPluginModule} from "@ngxs/websocket-plugin";
 import {KafkaState} from "./state/kafka.state";
 import {NgxsModule} from "@ngxs/store";
-import { SpeedComponent } from './components/charts/speed/speed.component';
+
 import {FormsModule} from "@angular/forms";
-import { StreamSpeedComponent } from './components/spark-stream-consumer/stream-speed/stream-speed.component';
-import { SparkStreamConsumerComponent } from './components/spark-stream-consumer/spark-stream-consumer.component';
-import { PopularCommunitiesComponent } from './components/spark-stream-consumer/popular-communities/popular-communities.component';
-import { DonutChartComponent } from './components/spark-stream-consumer/donut-chart/donut-chart.component';
-import { DonutComponent } from './components/charts/donut/donut.component';
+
+
+import { SidebarComponent } from './shared/sidebar/sidebar.component';
+import { TopbarComponent } from './shared/topbar/topbar.component';
+import { FooterComponent } from './shared/footer/footer.component';
+
+import spark_module from "./components/group_1.module";
+import kafka_module from "./components/group_2.module";
+import { BlankPageComponent } from './pages/blank-page/blank-page.component';
+import { HomeComponent } from './pages/home/home.component';
 
 @NgModule({
   declarations: [
     AppComponent,
+    SidebarComponent,
+    TopbarComponent,
+    FooterComponent,
+    ...spark_module.components,
+    ...kafka_module.components,
+    BlankPageComponent,
     HomeComponent,
-    KafkaStreamConsumerComponent,
-    SpeedComponent,
-    StreamSpeedComponent,
-    SparkStreamConsumerComponent,
-    PopularCommunitiesComponent,
-    DonutChartComponent,
-    DonutComponent
   ],
     imports: [
         BrowserModule,
