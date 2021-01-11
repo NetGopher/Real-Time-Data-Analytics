@@ -125,7 +125,11 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                     public KeyValue<String,String> apply(Windowed<String> windowed, String s) {
                          SubredditData[] values = jsonMapper.readValue(s, SubredditData[].class);
                             List<SubredditData> dataList = new ArrayList<>(Arrays.asList(values));
-                        return new KeyValue<>(windowed.key(), Common.maptoJsonString(Common.addDataToStreamMap(StreamType.REDDIT_MENTIONS_BATCH, values)));
+                            Map<String,Object> map = new HashMap<>();
+                            map.put("data", dataList);
+                            map.put("duration", Common.WINDOW_SIZE);
+
+                        return new KeyValue<>(windowed.key(), Common.maptoJsonString(Common.addDataToStreamMap(StreamType.REDDIT_MENTIONS_BATCH, map)));
                     }
                 });
 
@@ -159,6 +163,92 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                         return KeyValue.pair("stream", jsonString);
                     }
                 });
+
+    }
+
+    @Override
+    public KStream<String, String> getSubredditPostsProportion(KStream<String, Submission> initialStream) {
+
+        return initialStream
+//                .filter((s, submission) -> !submission.isNsfw())
+                .map((KeyValueMapper<String, Submission, KeyValue<String, Long>>) (k, v) -> KeyValue.pair(v.getSubreddit(), 1L))
+                //;
+                .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)).advanceBy(Duration.ofSeconds(Common.WINDOW_SIZE)))
+                .count()
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.WINDOW_SIZE), Suppressed.BufferConfig.unbounded()))
+                .toStream()
+//                 .peek((key, value) -> System.out.println("incoming message: {"+key.key()+"} {"+value+"}"))
+                .map((key, value) -> {
+                    return KeyValue.pair(String.valueOf("R's with " + value +(value == 1 ? " Post":"Posts")), 1L);
+                })
+                .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)).advanceBy(Duration.ofSeconds(Common.WINDOW_SIZE)))
+                .reduce(Long::sum)
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.WINDOW_SIZE), Suppressed.BufferConfig.unbounded()))
+                .toStream()
+//                .peek((s, aLong) -> {
+//                            System.out.println("key -> " + s.key() + ", value: " + aLong);
+//                        }
+//                )
+                .map(new KeyValueMapper<Windowed<String>, Long, KeyValue<String, String>>() {
+                    @SneakyThrows
+                    @Override
+                    public KeyValue<String, String> apply(Windowed<String> windowed, Long aLong) {
+                        return new KeyValue<String, String>("__data__", objectMapper.writeValueAsString(new SubredditData(windowed.key(), aLong)));
+                    }
+                })
+//
+                .groupByKey(Grouped.with(Serdes.String(), Serdes.String()))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)).advanceBy(Duration.ofSeconds(Common.WINDOW_SIZE)))
+
+                .aggregate(new Initializer<String>() {
+
+                    @SneakyThrows
+                    @Override
+                    public String apply() {
+                        List<SubredditData> subredditDataList = new ArrayList<>();
+                        String jsonResultString =  jsonMapper.writeValueAsString(subredditDataList);
+                        return  jsonResultString;
+                    }
+                }, new Aggregator<String, String, String>() {
+                    @SneakyThrows
+                    @Override
+                    public String apply(String key, String value, String aggregateValue) {
+                        SubredditData newSubredditData = objectMapper.readValue(value, SubredditData.class);
+                        String valuesString = null;
+                        try {
+                            SubredditData[] values = jsonMapper.readValue(aggregateValue, SubredditData[].class);
+                            List<SubredditData> dataList = new ArrayList<>(Arrays.asList(values));
+                            dataList.add(newSubredditData);
+                            valuesString = jsonMapper.writeValueAsString(dataList.toArray());
+                        } catch (JsonProcessingException e) {
+                            e.printStackTrace();
+                                                    List<SubredditData> subredditDataList = new ArrayList<>();
+                        return objectMapper.writeValueAsString(subredditDataList);
+
+                        }
+                        return valuesString;
+
+
+                    }
+                }, Materialized.with(Serdes.String(), Serdes.String()))
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.WINDOW_SIZE), Suppressed.BufferConfig.unbounded()))
+                .toStream()
+                .map(new KeyValueMapper<Windowed<String>, String, KeyValue<String,String>>() {
+                    @SneakyThrows
+                    @Override
+                    public KeyValue<String,String> apply(Windowed<String> windowed, String s) {
+                         SubredditData[] values = jsonMapper.readValue(s, SubredditData[].class);
+                            List<SubredditData> dataList = new ArrayList<>(Arrays.asList(values));
+                            Map<String,Object> map = new HashMap<>();
+                            map.put("data", dataList);
+                            map.put("duration", Common.WINDOW_SIZE);
+
+                        return new KeyValue<>(windowed.key(), Common.maptoJsonString(Common.addDataToStreamMap(StreamType.REDDIT_POSTS_PROPORTION, map)));
+                    }
+                });
+
 
     }
 }

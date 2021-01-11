@@ -6,5 +6,6 @@ import org.apache.kafka.streams.kstream.KStream;
 public interface StreamProcessor {
     public KStream<String, String> getSubredditMensionsStream(KStream<String, Submission> initialStream);
     public KStream<String, String> calculateStreamCount(KStream<String, Submission> intialStream);
+    public KStream<String, String> getSubredditPostsProportion(KStream<String, Submission> intialStream);
 
 }

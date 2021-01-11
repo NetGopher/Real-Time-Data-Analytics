@@ -32,9 +32,6 @@ export class DataService {
         case StreamTypes.COUNT_STREAM: // "type == 'COUNT_STREAM'"
           this.kafkaStreamHandlerService.handlePostsSpeed(value.data as PostsSpeed);
           break;
-        case StreamTypes.COUNT_STREAM: // "type == 'COUNT_STREAM'"
-          this.kafkaStreamHandlerService.handlePostsSpeed(value.data as PostsSpeed);
-          break;
         default:
           console.log(value.data)
       }

@@ -187,4 +187,9 @@ public class StreamProcessorImplV3 implements StreamProcessor {
                 });
 
     }
+
+    @Override
+    public KStream<String, String> getSubredditPostsProportion(KStream<String, Submission> intialStream) {
+        return null;
+    }
 }
