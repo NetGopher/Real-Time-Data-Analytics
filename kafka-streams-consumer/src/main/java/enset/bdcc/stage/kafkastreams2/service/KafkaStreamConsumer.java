@@ -38,9 +38,11 @@ public class KafkaStreamConsumer {
 
         StreamsBuilder streamsBuilder = new StreamsBuilder();
         KStream<String, Submission> initialStream = streamsBuilder.stream("submissions", Consumed.with(Serdes.String(), CustomSerdes.SubmissionSerde()));
-        streamProcessor.getSubredditMensionsStream(initialStream)
-                .merge(streamProcessor.calculateStreamCount(initialStream))
-                .merge(streamProcessor.getSubredditPostsProportion(initialStream))
+        streamProcessor
+                .getWordCount(initialStream)
+//                .merge(streamProcessor.getSubredditMensionsStream(initialStream))
+//                .merge(streamProcessor.calculateStreamCount(initialStream))
+//                .merge(streamProcessor.getSubredditPostsProportion(initialStream))
                 .to("reddit-json", Produced.with(Serdes.String(), Serdes.String()));
 
         Topology topology = streamsBuilder.build();

@@ -1,5 +1,11 @@
 import {Injectable} from '@angular/core';
-import {PostsSpeed, SubredditMention,SubredditMentionBatch} from "../other/Entities";
+import {
+  PostsSpeed,
+  SubredditMention,
+  SubredditMentionBatch,
+  WordCountBatch,
+  WordData,
+} from "../other/Entities";
 import {BehaviorSubject, Observable, Subject} from "rxjs";
 
 @Injectable({
@@ -10,7 +16,9 @@ export class KafkaStreamHandlerService {
   public i = 0;
   public subredditMentions: SubredditMention[] = []
   public subredditPostsProportion: SubredditMention[] = []
+  public wordData: WordData[] = []
   public subredditMentionsObserver: BehaviorSubject<SubredditMention[]> = new BehaviorSubject<SubredditMention[]>(null);
+  public wordDataObserver: BehaviorSubject<WordData[]> = new BehaviorSubject<WordData[]>(null);
   public subredditPostsProportionObserver: BehaviorSubject<SubredditMention[]> = new BehaviorSubject<SubredditMention[]>(null);
   public postsSpeedList: PostsSpeed[] = [];
   public postsSpeedObserver: BehaviorSubject<number> = new BehaviorSubject<number>(1);
@@ -27,32 +35,21 @@ export class KafkaStreamHandlerService {
 
   handlePostsSpeed(value: PostsSpeed) {
     this.postsSpeedObserver.next(value.count);
-    // console.log("New Speed: " + value.count)
     this.postsSpeedList.push(value);
   }
 
   handleRedditMentionsBatch(data: SubredditMentionBatch) {
-    // let array:any[] = [];
-    // console.log(data);
-    // for (const value of data.data) {
-    //       array.push({
-    //         "subreddit":value.subreddit,
-    //         "count":value.count
-    //       })
-    // }
     this.subredditMentions = data.data;
     this.subredditMentionsObserver.next(data.data);
   }
-    handleRedditPostsProportion(data: SubredditMentionBatch) {
-    // let array:any[] = [];
-    // console.log(data);
-    // for (const value of data.data) {
-    //       array.push({
-    //         "subreddit":value.subreddit,
-    //         "count":value.count
-    //       })
-    // }
+
+  handleRedditPostsProportion(data: SubredditMentionBatch) {
     this.subredditPostsProportion = data.data;
     this.subredditPostsProportionObserver.next(data.data);
+  }
+
+  handleWordCountBatch(data: WordCountBatch) {
+    this.wordData = data.data;
+    this.wordDataObserver.next(data.data);
   }
 }

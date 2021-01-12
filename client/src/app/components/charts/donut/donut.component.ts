@@ -35,11 +35,10 @@ export class DonutComponent implements OnInit, OnDestroy, AfterViewInit {
   public refreshInterval: number = 2000; //MILLISECOND
   @Input('transitionDuration')
   public transitionDuration: number = 1000; //MILLISECOND
-  private chart: am4charts.PieChart;
-  public static counterId: number = 0;
   @Input('initialData')
   public newData: any[] = [];
-  public oldData: any[] = [];
+  private chart: am4charts.PieChart;
+  public static counterId: number = 0;
 
   private triggerChange: boolean = false;
 
