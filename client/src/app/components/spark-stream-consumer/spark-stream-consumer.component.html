@@ -33,7 +33,7 @@
       </div>
       <!-- Card Body -->
       <div class="card-body">
-        <app-stream-speed [dataObservable]="sparkStreamHandler.postsSpeedObserver" ></app-stream-speed>
+        <app-speed [dataObservable]="sparkStreamHandler.postsSpeedObserver" ></app-speed>
       </div>
     </div>
   </div>
@@ -62,7 +62,9 @@
       </div>
       <!-- Card Body -->
       <div class="card-body">
-        <app-donut-chart [dataObservable]="sparkStreamHandler.popularCommunitiesObserver"></app-donut-chart>
+        <app-donut [dataObservable]="sparkStreamHandler.popularCommunitiesObserver"
+                   [categoryProperty]="'subreddit'" [valueProperty]="'count'"
+        ></app-donut>
       </div>
     </div>
   </div>

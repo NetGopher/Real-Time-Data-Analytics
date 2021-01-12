@@ -18,7 +18,7 @@ export class SparkStreamHandlerService {
   constructor() { }
 
   handleRedditMentions(subredditMentionBatch: SubredditMentionBatch) {
-    //console.log("New Data: " + JSON.stringify(subredditMentionBatch.data))
+    console.log("New Data: " + JSON.stringify(subredditMentionBatch.data))
     // @ts-ignore
     this.popularCommunitiesObserver.next(subredditMentionBatch.data);
   }
