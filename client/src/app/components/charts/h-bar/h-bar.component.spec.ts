@@ -1,20 +1,20 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { PopularCommunitiesComponent } from './popular-communities.component';
+import { HBarComponent } from './h-bar.component';
 
-describe('PopularCommunitiesComponent', () => {
-  let component: PopularCommunitiesComponent;
-  let fixture: ComponentFixture<PopularCommunitiesComponent>;
+describe('HBarComponent', () => {
+  let component: HBarComponent;
+  let fixture: ComponentFixture<HBarComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ PopularCommunitiesComponent ]
+      declarations: [ HBarComponent ]
     })
     .compileComponents();
   });
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(PopularCommunitiesComponent);
+    fixture = TestBed.createComponent(HBarComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

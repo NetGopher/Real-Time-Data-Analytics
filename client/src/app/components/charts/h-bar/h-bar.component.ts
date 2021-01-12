@@ -18,11 +18,11 @@ import {SparkStreamHandlerService} from "../../../services/spark-stream-handler.
 import {Observable} from "rxjs";
 import {SubredditMention} from "../../../other/Entities";
 @Component({
-  selector: 'app-popular-communities',
-  templateUrl: './popular-communities.component.html',
-  styleUrls: ['./popular-communities.component.css']
+  selector: 'app-h-bar',
+  templateUrl: './h-bar.component.html',
+  styleUrls: ['./h-bar.component.css']
 })
-export class PopularCommunitiesComponent implements OnInit, OnDestroy, AfterViewInit {
+export class HBarComponent implements OnInit, OnDestroy, AfterViewInit {
 
   @Input('dataObservable')
   public dataObservable:Observable<any>;
@@ -34,10 +34,10 @@ export class PopularCommunitiesComponent implements OnInit, OnDestroy, AfterView
   public static counterId:number = 0;
   public currentData: SubredditMention[]= null;
 
-  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone, private dataService: SparkDataService, private sparkStreamHander: SparkStreamHandlerService) { }
+  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone) { }
 
   randomIdValueString: string;
-  browserOnly(f: (popularCommunitiesComponent: PopularCommunitiesComponent) => void) {
+  browserOnly(f: (hBarComponent: HBarComponent) => void) {
     if (isPlatformBrowser(this.platformId)) {
       this.zone.runOutsideAngular(() => {
         f(this);
@@ -47,26 +47,26 @@ export class PopularCommunitiesComponent implements OnInit, OnDestroy, AfterView
 
   ngAfterViewInit() {
     // Chart code goes in here
-    this.browserOnly((popularCommunitiesComponent) => {
+    this.browserOnly((hBarComponent) => {
       /* Chart code */
       // Themes begin
       am4core.useTheme(am4themes_animated);
       // Themes end
 
-      popularCommunitiesComponent.chart = am4core.create("popularCommunitiesChartdiv_" + popularCommunitiesComponent.randomIdValueString, am4charts.XYChart);
-      popularCommunitiesComponent.chart.padding(40, 40, 40, 40);
+      hBarComponent.chart = am4core.create("hBarChartdiv_" + hBarComponent.randomIdValueString, am4charts.XYChart);
+      hBarComponent.chart.padding(40, 40, 40, 40);
 
-      let categoryAxis = popularCommunitiesComponent.chart.yAxes.push(new am4charts.CategoryAxis());
+      let categoryAxis = hBarComponent.chart.yAxes.push(new am4charts.CategoryAxis());
       categoryAxis.renderer.grid.template.location = 0;
       categoryAxis.dataFields.category = "subreddit";
       categoryAxis.renderer.minGridDistance = 1;
       categoryAxis.renderer.inversed = true;
       categoryAxis.renderer.grid.template.disabled = true;
 
-      let valueAxis = popularCommunitiesComponent.chart.xAxes.push(new am4charts.ValueAxis());
+      let valueAxis = hBarComponent.chart.xAxes.push(new am4charts.ValueAxis());
       valueAxis.min = 0;
 
-      let series = popularCommunitiesComponent.chart.series.push(new am4charts.ColumnSeries());
+      let series = hBarComponent.chart.series.push(new am4charts.ColumnSeries());
       series.dataFields.categoryY = "subreddit";
       series.dataFields.valueX = "count";
       series.tooltipText = "{valueX.value}"
@@ -82,18 +82,18 @@ export class PopularCommunitiesComponent implements OnInit, OnDestroy, AfterView
 
       // as by default columns of the same series are of the same color, we add adapter which takes colors from chart.colors color set
       series.columns.template.adapter.add("fill", function (fill, target) {
-        return popularCommunitiesComponent.chart.colors.getIndex(target.dataItem.index);
+        return hBarComponent.chart.colors.getIndex(target.dataItem.index);
       });
 
       categoryAxis.sortBySeries = series;
-      popularCommunitiesComponent.chart.data = []
+      hBarComponent.chart.data = []
 
-      popularCommunitiesComponent.chart.setTimeout(setNewData, 2000);
+      hBarComponent.chart.setTimeout(setNewData, 2000);
 
       function setNewData() {
-        //console.log("Data: " + JSON.stringify(popularCommunitiesComponent.currentData));
-        popularCommunitiesComponent.chart.data = popularCommunitiesComponent.currentData != null ?  popularCommunitiesComponent.currentData.slice(0, 7) : null;
-        popularCommunitiesComponent.chart.setTimeout(setNewData, popularCommunitiesComponent.refreshInterval);
+        //console.log("Data: " + JSON.stringify(hBarComponent.currentData));
+        hBarComponent.chart.data = hBarComponent.currentData != null ?  hBarComponent.currentData.slice(0, 7) : null;
+        hBarComponent.chart.setTimeout(setNewData, hBarComponent.refreshInterval);
       }
     });
   }
@@ -108,12 +108,12 @@ export class PopularCommunitiesComponent implements OnInit, OnDestroy, AfterView
   }
 
   ngOnInit(): void {
-    this.randomIdValueString = `` + PopularCommunitiesComponent.counterId;
-    PopularCommunitiesComponent.counterId++;
+    this.randomIdValueString = `` + HBarComponent.counterId;
+    HBarComponent.counterId++;
     this.dataObservable.subscribe(obj => {
 
       this.currentData = obj;
-        //PopularCommunitiesComponent.chart.data = obj;
+        //HBarComponent.chart.data = obj;
     });
   }
 

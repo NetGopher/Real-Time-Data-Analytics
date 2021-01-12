@@ -14,8 +14,7 @@ import { SidebarComponent } from './shared/sidebar/sidebar.component';
 import { TopbarComponent } from './shared/topbar/topbar.component';
 import { FooterComponent } from './shared/footer/footer.component';
 
-import spark_module from "./components/group_1.module";
-import kafka_module from "./components/group_2.module";
+import chart_components_module from "./components/chart_components.module";
 import { BlankPageComponent } from './pages/blank-page/blank-page.component';
 import { HomeComponent } from './pages/home/home.component';
 
@@ -25,8 +24,7 @@ import { HomeComponent } from './pages/home/home.component';
     SidebarComponent,
     TopbarComponent,
     FooterComponent,
-    ...spark_module.components,
-    ...kafka_module.components,
+    ...chart_components_module.components,
     BlankPageComponent,
     HomeComponent,
   ],
