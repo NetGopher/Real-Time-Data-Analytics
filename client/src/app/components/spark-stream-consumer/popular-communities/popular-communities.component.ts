@@ -92,7 +92,7 @@ export class PopularCommunitiesComponent implements OnInit, OnDestroy, AfterView
 
       function setNewData() {
         //console.log("Data: " + JSON.stringify(popularCommunitiesComponent.currentData));
-        popularCommunitiesComponent.chart.data = popularCommunitiesComponent.currentData.slice(0, 7);
+        popularCommunitiesComponent.chart.data = popularCommunitiesComponent.currentData != null ?  popularCommunitiesComponent.currentData.slice(0, 7) : null;
         popularCommunitiesComponent.chart.setTimeout(setNewData, popularCommunitiesComponent.refreshInterval);
       }
     });
