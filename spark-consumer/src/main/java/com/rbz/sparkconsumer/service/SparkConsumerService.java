@@ -49,7 +49,7 @@ public class SparkConsumerService {
     private final KafkaConsumerConfig kafkaConsumerConfig;
     private final Collection<String> topics;
 
-    private final Integer batchInterval=60;
+    private final Integer batchInterval=30;
 
     @Autowired
     public SparkConsumerService(SparkConf sparkConf,
@@ -129,10 +129,10 @@ public class SparkConsumerService {
 
                     Map<String, Object> recordArrayobj = new HashMap<>();
                     recordArrayobj.put("duration", batchInterval);
-                    recordArrayobj.put("subredditMentions", recordArray);
+                    recordArrayobj.put("data", recordArray);
 
                     Map<String, Object> results = new HashMap<>();
-                    results.put("type", SteamType.REDDIT_MENTIONS);
+                    results.put("type", SteamType.REDDIT_MENTIONS_BATCH);
                     results.put("data", recordArrayobj);
                     System.out.println("results: " + results);
                     ObjectMapper objectMapper = new ObjectMapper();
