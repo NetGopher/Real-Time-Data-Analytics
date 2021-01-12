@@ -2,7 +2,14 @@ import {Injectable} from '@angular/core';
 import {ConnectWebSocket} from "@ngxs/websocket-plugin";
 import {Observable, Subject} from "rxjs";
 import {KafkaState} from "../state/kafka.state";
-import {PostsSpeed, StreamData, StreamTypes, SubredditMention, SubredditMentionBatch} from "../other/Entities";
+import {
+  PostsSpeed,
+  StreamData,
+  StreamTypes,
+  SubredditMention,
+  SubredditMentionBatch,
+  WordCountBatch
+} from "../other/Entities";
 import {Select, Store} from "@ngxs/store";
 import {KafkaStreamHandlerService} from "./kafka-stream-handler.service";
 
@@ -31,6 +38,9 @@ export class DataService {
           break;
         case StreamTypes.COUNT_STREAM: // "type == 'COUNT_STREAM'"
           this.kafkaStreamHandlerService.handlePostsSpeed(value.data as PostsSpeed);
+          break;
+        case StreamTypes.WORD_COUNT_BATCH: // "type == 'WORD_COUNT_BATCH'"
+          this.kafkaStreamHandlerService.handleWordCountBatch(value.data as WordCountBatch);
           break;
         default:
           console.log(value.data)

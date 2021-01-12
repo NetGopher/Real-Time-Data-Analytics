@@ -4,6 +4,7 @@ import { KafkaStreamConsumerComponent } from './kafka-stream-consumer/kafka-stre
 import { HBarComponent } from './charts/h-bar/h-bar.component';
 import { SpeedComponent } from './charts/speed/speed.component';
 import { DonutComponent } from './charts/donut/donut.component';
+import { TagCloudChartComponent } from "./charts/tag-cloud-chart/tag-cloud-chart.component";
 
 const components = [
   SparkStreamConsumerComponent,
@@ -11,6 +12,7 @@ const components = [
   HBarComponent,
   SpeedComponent,
   DonutComponent,
+  TagCloudChartComponent
 ]
 
 export default {
