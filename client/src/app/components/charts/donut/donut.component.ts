@@ -43,7 +43,7 @@ export class DonutComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private triggerChange: boolean = false;
 
-  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone, private dataService: DataService, private kafkaStreamHander: KafkaStreamHandlerService) {
+  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone) {
   }
 
   randomIdValueString: string;

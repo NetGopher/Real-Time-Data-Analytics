@@ -34,7 +34,7 @@ export class SpeedComponent implements OnInit, OnDestroy, AfterViewInit {
   public static counterId: number = 0;
   public headValue: number = 0;
 
-  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone, private dataService: DataService, private kafkaStreamHander: KafkaStreamHandlerService) {
+  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone) {
   }
 
   randomIdValueString: string;
