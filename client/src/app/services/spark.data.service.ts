@@ -22,7 +22,7 @@ export class SparkDataService {
       let value: StreamData = JSON.parse(values[0]);
       console.log("Value:" + JSON.stringify(value))
       switch (value.type) {
-        case StreamTypes.REDDIT_MENTIONS: // "type == 'REDDIT_MENTIONS'"
+        case StreamTypes.REDDIT_MENTIONS_BATCH: // "type == 'REDDIT_MENTIONS'"
           //console.log("Value:" + JSON.stringify(value))
           this.sparkStreamHandlerService.handleRedditMentions(value.data as SubredditMentionBatch);
           break;
