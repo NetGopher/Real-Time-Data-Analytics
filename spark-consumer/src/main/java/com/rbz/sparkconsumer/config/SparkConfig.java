@@ -9,7 +9,7 @@ public class SparkConfig {
     @Bean
     public SparkConf sparkConf() {
         return new SparkConf()
-                .setAppName("JavaDirectKafkaWordCount")
+                .setAppName("JavaDirectMultiPurposeConsumer")
                 .setMaster("local[2]")
                 .set("spark.executor.memory","1g");
     }

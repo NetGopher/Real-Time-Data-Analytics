@@ -31,8 +31,13 @@ export class HBarComponent implements OnInit, OnDestroy, AfterViewInit {
   public refreshInterval: number = 2000; //MILLISECOND
   @Input('transitionDuration')
   public transitionDuration: number = 1000; //MILLISECOND
+  public newData: any[] = [];
   public static counterId:number = 0;
   public currentData: SubredditMention[]= null;
+
+
+  private triggerChange: boolean = false;
+
 
   constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone) { }
 
@@ -86,15 +91,37 @@ export class HBarComponent implements OnInit, OnDestroy, AfterViewInit {
       });
 
       categoryAxis.sortBySeries = series;
-      hBarComponent.chart.data = []
+      hBarComponent.chart.data = hBarComponent.newData;
 
-      hBarComponent.chart.setTimeout(setNewData, 2000);
+      hBarComponent.chart.setTimeout(setNewData, hBarComponent.refreshInterval);
+      hBarComponent.dataObservable.subscribe((values) => {
+         if (!values) {
+          hBarComponent.triggerChange = false;
+          return;
+        }
+         if (JSON.stringify(values) != JSON.stringify(hBarComponent.newData)) {
+          hBarComponent.triggerChange = true;
+          hBarComponent.newData = values != null ?  hBarComponent.currentData.slice(1, 6) : null;
+        }else hBarComponent.triggerChange = false;
+      });
 
       function setNewData() {
-        //console.log("Data: " + JSON.stringify(hBarComponent.currentData));
-        hBarComponent.chart.data = hBarComponent.currentData != null ?  hBarComponent.currentData.slice(0, 7) : null;
-        hBarComponent.chart.setTimeout(setNewData, hBarComponent.refreshInterval);
+        if(hBarComponent.triggerChange){
+          hBarComponent.triggerChange = false;
+          series.hide(hBarComponent.transitionDuration / 2);
+          setTimeout(() => {
+            hBarComponent.chart.data = hBarComponent.newData != null ?  hBarComponent.currentData.slice(1, 6) : null;
+            // pieSeries.show(hBarComponent.transitionDuration);
+            series.show(hBarComponent.transitionDuration / 2);
+            hBarComponent.chart.setTimeout(setNewData, hBarComponent.refreshInterval);
+          }, hBarComponent.transitionDuration / 2 + 1000);
+        } else
+          hBarComponent.chart.setTimeout(setNewData, hBarComponent.refreshInterval);
+        //
       }
+        //console.log("Data: " + JSON.stringify(hBarComponent.currentData));
+        //hBarComponent.chart.data = hBarComponent.currentData != null ?  hBarComponent.currentData.slice(1, 6) : null;
+        //hBarComponent.chart.setTimeout(setNewData, hBarComponent.refreshInterval);
     });
   }
 

@@ -57,7 +57,7 @@ export class TagCloudChartComponent implements OnInit, OnDestroy, AfterViewInit 
   public triggerChange: boolean = true //true when new data arrives, turned to false when chart received the data
   private isReady: boolean = true; //true when Series (cloud) has finished ("transitioned" event triggered)
 
-  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone, private dataService: DataService, private kafkaStreamHander: KafkaStreamHandlerService) {
+  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone) {
   }
 
   randomIdValueString: string;
