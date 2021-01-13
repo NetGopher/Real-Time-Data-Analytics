@@ -1,5 +1,11 @@
 import { Injectable } from '@angular/core';
-import {PostsPerMinuteItem, PostsSpeed, SubredditMention, SubredditMentionBatch} from "../other/Entities";
+import {
+  PostsPerMinuteItem,
+  PostsSpeed,
+  SubredditMention,
+  SubredditMentionBatch,
+  WordCountBatch, WordData
+} from "../other/Entities";
 import {BehaviorSubject, Observable} from "rxjs";
 
 @Injectable({
@@ -18,6 +24,9 @@ export class SparkStreamHandlerService {
   public postsSpeedObserver: BehaviorSubject<number> = new BehaviorSubject<number>(1);
   public postsPerMinuteHistory: PostsPerMinuteItem[] = [];
   public postsPerMinuteObserver: BehaviorSubject<PostsPerMinuteItem> = new BehaviorSubject<PostsPerMinuteItem>(null);
+  public wordData: WordData[] = []
+  public wordDataObserver: BehaviorSubject<WordData[]> = new BehaviorSubject<WordData[]>(null);
+
 
   constructor() { }
 
@@ -43,6 +52,11 @@ export class SparkStreamHandlerService {
     console.log("New PPM: " + postsPerMinuteItem)
     this.postsPerMinuteHistory.push(postsPerMinuteItem);
     this.postsPerMinuteObserver.next(postsPerMinuteItem);
+  }
+
+  handleWordCountBatch(data: WordCountBatch) {
+    this.wordData = data.data;
+    this.wordDataObserver.next(data.data);
   }
 
 }

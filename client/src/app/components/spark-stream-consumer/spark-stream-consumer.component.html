@@ -106,12 +106,12 @@
         class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
         <h6 class="m-0 font-weight-bold text-primary">Donut</h6>
         <div class="dropdown no-arrow">
-          <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink2"
+          <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink4"
              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
           </a>
           <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-               aria-labelledby="dropdownMenuLink2">
+               aria-labelledby="dropdownMenuLink4">
             <div class="dropdown-header">Dropdown Header:</div>
             <a class="dropdown-item" href="#">Action</a>
             <a class="dropdown-item" href="#">Another action</a>
@@ -136,12 +136,12 @@
         class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
         <h6 class="m-0 font-weight-bold text-primary">Column</h6>
         <div class="dropdown no-arrow">
-          <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink3"
+          <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink5"
              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
           </a>
           <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-               aria-labelledby="dropdownMenuLink3">
+               aria-labelledby="dropdownMenuLink5">
             <div class="dropdown-header">Dropdown Header:</div>
             <a class="dropdown-item" href="#">Action</a>
             <a class="dropdown-item" href="#">Another action</a>
@@ -154,6 +154,34 @@
       <div class="card-body">
         <app-column [dataObservable]="sparkStreamHandler.postsPerMinuteObserver"
         ></app-column>
+      </div>
+    </div>
+  </div>
+  <!--  World Cloud chart -->
+  <div class="col-xl-6 col-lg-6">
+    <div class="card shadow mb-4">
+      <!-- Card Header - Dropdown -->
+      <div
+        class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">Word Cloud</h6>
+        <div class="dropdown no-arrow">
+          <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink6"
+             data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+          </a>
+          <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+               aria-labelledby="dropdownMenuLink6">
+            <div class="dropdown-header">Dropdown Header:</div>
+            <a class="dropdown-item" href="#">Action</a>
+            <a class="dropdown-item" href="#">Another action</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="#">Something else here</a>
+          </div>
+        </div>
+      </div>
+      <!-- Card Body -->
+      <div class="card-body">
+        <app-tag-cloud-chart [dataObservable]="sparkStreamHandler.wordDataObserver" [initialData]="sparkStreamHandler.wordData" [valueProperty]="'count'" [categoryProperty]="'word'" [title]="'Most used words'"></app-tag-cloud-chart>
       </div>
     </div>
   </div>
