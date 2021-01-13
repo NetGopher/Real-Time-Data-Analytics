@@ -21,6 +21,7 @@ import * as am4plugins_wordCloud from "@amcharts/amcharts4/plugins/wordCloud";
 
 import {ISpriteEvents} from "@amcharts/amcharts4/.internal/core/Sprite";
 import {WordCloudSeries} from "@amcharts/amcharts4/plugins/wordCloud";
+import {string} from "@amcharts/amcharts4/core";
 
 @Component({
   selector: 'app-tag-cloud-chart',
@@ -36,9 +37,11 @@ export class TagCloudChartComponent implements OnInit, OnDestroy, AfterViewInit 
   @Input('valueProperty')
   public valueProperty: string;
   @Input('refreshInterval')
-  public refreshInterval: number = 2000; //MILLISECOND
+  public refreshInterval: number = 2500; //MILLISECOND
+  @Input('fullRefreshInterval')
+  public fullRefreshInterval: number = 10000; //MILLISECOND
   @Input('transitionDuration')
-  public transitionDuration: number = 1000; //MILLISECOND
+  public transitionDuration: number = 1250; //MILLISECOND
   @Input('initialData')
   public newData: any[] = [];
   private chart: am4plugins_wordCloud.WordCloud;
@@ -92,7 +95,7 @@ export class TagCloudChartComponent implements OnInit, OnDestroy, AfterViewInit 
       myComponent.series.labels.template.url = "https://stackoverflow.com/questions/tagged/{word}";
       myComponent.series.labels.template.urlTarget = "_blank";
       myComponent.series.labels.template.tooltipText = "{word}: {value}";
-
+      myComponent.series.maxCount = 50;
       let hoverState = myComponent.series.labels.template.states.create("hover");
       hoverState.properties.fill = am4core.color("#FF0000");
 
@@ -106,7 +109,6 @@ export class TagCloudChartComponent implements OnInit, OnDestroy, AfterViewInit 
       title.fontSize = 20;
       title.fontWeight = "800";
       myComponent.dataObservable.subscribe((values) => {
-
         // console.log("Changed --->");
         // console.log(values)
         if (!values) {
@@ -116,20 +118,53 @@ export class TagCloudChartComponent implements OnInit, OnDestroy, AfterViewInit 
         if (JSON.stringify(values) != JSON.stringify(myComponent.newData)) {
           myComponent.triggerChange = true;
           // myComponent.series.data = values;
-          values.sort((a, b) =>  {
-            console.log("a" + a);
-            return a;
+          values.sort((a, b) => {
+            return b[myComponent.valueProperty] - a[myComponent.valueProperty];
           });
           myComponent.newData = []
           for (let i = 0; i < values.length && i < 30; i++) {
-          let value = values[i];
-          myComponent.newData.push(value);
-        }
+            let value = values[i];
+            myComponent.newData.push(value);
+          }
+          console.log(myComponent.series.dataItems.length)
+          if (myComponent.series.dataItems.length > 100) {
+              myComponent.chart.hide(2000);
+            setTimeout(() => {
+              myComponent.series.clearCache();
+              myComponent.series.dataItems.clear();
+              myComponent.series.addData(myComponent.newData);
+              myComponent.chart.show(100);
+
+            }, 2000)
+          } else
+            myComponent.series.addData(myComponent.newData, 5);
           // myComponent.series.data = myComponent.newData;
 
-        }else myComponent.triggerChange = false;
+        } else myComponent.triggerChange = false;
 
       });
+      myComponent.series.setTimeout(randomValue, myComponent.refreshInterval);
+        myComponent.chart._eventDispatcher.on("hidden", () => {
+          myComponent.chart.show(2000);
+        })
+      function randomValue() {
+        setTimeout(() => {
+          myComponent.chart.show(2000);
+          myComponent.series.clearCache();
+          myComponent.series.dataItems.clear();
+          myComponent.series.addData(myComponent.newData, 5);
+        }, myComponent.fullRefreshInterval);
+        if (myComponent.triggerChange) {
+          myComponent.triggerChange = false;
+          setTimeout(() => {
+            myComponent.series.addData(myComponent.newData);
+            console.log(myComponent.series.dataItems.length + ", " + myComponent.series.data.length + ", ", myComponent.series.maxCount)
+          }, myComponent.transitionDuration + 2000)
+        }
+        myComponent.chart.setTimeout(randomValue, myComponent.refreshInterval);
+      }
+
+
     });
   }
 
@@ -150,6 +185,6 @@ export class TagCloudChartComponent implements OnInit, OnDestroy, AfterViewInit 
   }
 
   onClick() {
-          this.series.data = this.newData;
+    this.series.data = this.newData;
   }
 }
