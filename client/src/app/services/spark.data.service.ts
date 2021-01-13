@@ -24,8 +24,10 @@ export class SparkDataService {
       switch (value.type) {
         case StreamTypes.REDDIT_MENTIONS_BATCH: // "type == 'REDDIT_MENTIONS'"
           //console.log("Value:" + JSON.stringify(value))
-          this.sparkStreamHandlerService.handleRedditMentions(value.data as SubredditMentionBatch);
+          this.sparkStreamHandlerService.handleRedditMentionsBatch(value.data as SubredditMentionBatch);
           break;
+        case StreamTypes.REDDIT_POSTS_PROPORTION: // "type == 'REDDIT_POSTS_PROPORTION'"
+          this.sparkStreamHandlerService.handleRedditPostsProportion(value.data as SubredditMentionBatch)
         case StreamTypes.COUNT_STREAM: // "type == 'COUNT_STREAM'"
           //console.log("Value:" + JSON.stringify(value))
           this.sparkStreamHandlerService.handlePostsSpeed(value.data as PostsSpeed);
