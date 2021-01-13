@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {PostsSpeed, SubredditMention, SubredditMentionBatch} from "../other/Entities";
+import {PostsPerMinuteItem, PostsSpeed, SubredditMention, SubredditMentionBatch} from "../other/Entities";
 import {BehaviorSubject, Observable} from "rxjs";
 
 @Injectable({
@@ -16,7 +16,8 @@ export class SparkStreamHandlerService {
   public results: SubredditMention[] = []
   public postsSpeedList: PostsSpeed[] = [];
   public postsSpeedObserver: BehaviorSubject<number> = new BehaviorSubject<number>(1);
-
+  public postsPerMinuteHistory: PostsPerMinuteItem[] = [];
+  public postsPerMinuteObserver: BehaviorSubject<PostsPerMinuteItem> = new BehaviorSubject<PostsPerMinuteItem>(null);
 
   constructor() { }
 
@@ -27,7 +28,7 @@ export class SparkStreamHandlerService {
     this.popularCommunitiesObserver.next(subredditMentionBatch.data);
   }
 
-   handleRedditPostsProportion(subredditMentionBatch: SubredditMentionBatch) {
+  handleRedditPostsProportion(subredditMentionBatch: SubredditMentionBatch) {
     this.subredditPostsProportion = subredditMentionBatch.data;
     this.subredditPostsProportionObserver.next(subredditMentionBatch.data);
   }
@@ -36,6 +37,12 @@ export class SparkStreamHandlerService {
     this.postsSpeedObserver.next(value.count);
     console.log("New Speed: " + value.count)
     this.postsSpeedList.push(value);
+  }
+
+  handlePostsPerMinuteItem(postsPerMinuteItem: PostsPerMinuteItem){
+    console.log("New PPM: " + postsPerMinuteItem)
+    this.postsPerMinuteHistory.push(postsPerMinuteItem);
+    this.postsPerMinuteObserver.next(postsPerMinuteItem);
   }
 
 }

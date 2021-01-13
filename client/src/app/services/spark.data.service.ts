@@ -4,7 +4,7 @@ import {SparkStreamHandlerService} from "./spark-stream-handler.service";
 import {ConnectWebSocket} from "@ngxs/websocket-plugin";
 import {Observable} from "rxjs";
 import {KafkaState} from "../state/kafka.state";
-import {PostsSpeed, StreamData, StreamTypes, SubredditMentionBatch} from "../other/Entities";
+import {PostsPerMinuteItem, PostsSpeed, StreamData, StreamTypes, SubredditMentionBatch} from "../other/Entities";
 
 @Injectable({
   providedIn: 'root'
@@ -32,6 +32,9 @@ export class SparkDataService {
           //console.log("Value:" + JSON.stringify(value))
           this.sparkStreamHandlerService.handlePostsSpeed(value.data as PostsSpeed);
           break;
+        case StreamTypes.POSTS_PER_MINUTE: // "type == 'POSTS_PER_MINUTE'"
+          console.log("Value:" + JSON.stringify(value))
+          this.sparkStreamHandlerService.handlePostsPerMinuteItem(value.data as PostsPerMinuteItem);
         default:
           console.log(value.data)
       }
