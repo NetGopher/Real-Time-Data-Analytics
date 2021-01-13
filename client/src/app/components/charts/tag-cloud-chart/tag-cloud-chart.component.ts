@@ -37,20 +37,25 @@ export class TagCloudChartComponent implements OnInit, OnDestroy, AfterViewInit 
   @Input('valueProperty')
   public valueProperty: string;
   @Input('refreshInterval')
-  public refreshInterval: number = 2500; //MILLISECOND
-  @Input('fullRefreshInterval')
-  public fullRefreshInterval: number = 10000; //MILLISECOND
+  public refreshInterval: number = 5000; //MILLISECOND | OPTIONAL
   @Input('transitionDuration')
-  public transitionDuration: number = 1250; //MILLISECOND
+  public transitionDuration: number = 500; //MILLISECOND | OPTIONAL
   @Input('initialData')
   public newData: any[] = [];
-  private chart: am4plugins_wordCloud.WordCloud;
-  public static counterId: number = 0;
-
-  public triggerChange: boolean = false;
+  @Input('maxCount') //Max Words to show in cloud (0 => Turned off)
+  public maxCount: number = 0;
   @Input('title')
   public Title: string = "Word Cloud";
+  @Input('forceRefresh')
+  public forceRefresh: boolean = false;
+  private chart: am4plugins_wordCloud.WordCloud;
   private series: WordCloudSeries;
+  public static counterId: number = 0;
+  // used when forceRefresh is turned off, checks if cloud is rendered after the specified duration (if refreshInterval ran out)
+  public checkTransitionCompleteDuration: number = 1000;
+
+  public triggerChange: boolean = true //true when new data arrives, turned to false when chart received the data
+  private isReady: boolean = true; //true when Series (cloud) has finished ("transitioned" event triggered)
 
   constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone, private dataService: DataService, private kafkaStreamHander: KafkaStreamHandlerService) {
   }
@@ -84,33 +89,52 @@ export class TagCloudChartComponent implements OnInit, OnDestroy, AfterViewInit 
       myComponent.series.dataFields.word = myComponent.categoryProperty;
       myComponent.series.dataFields.value = myComponent.valueProperty;
 
-      myComponent.series.heatRules.push({
-        "target": myComponent.series.labels.template,
-        "property": "fill",
-        "min": am4core.color("#0000CC"),
-        "max": am4core.color("#CC00CC"),
-        "dataField": "value"
-      });
+      // Heat rules generated coors
 
-      myComponent.series.labels.template.url = "https://stackoverflow.com/questions/tagged/{word}";
-      myComponent.series.labels.template.urlTarget = "_blank";
+      // myComponent.series.heatRules.push({
+      //   "target": myComponent.series.labels.template,
+      //   "property": "fill",
+      //   "min": am4core.color("#0000CC"),
+      //   "max": am4core.color("#CC00CC"),
+      //   logarithmic: true,
+      //   "dataField": "value"
+      // });
+
+
+      // Random Colors
+      myComponent.series.colors = new am4core.ColorSet();
+      myComponent.series.colors.passOptions = {};
+      myComponent.series.colors.reuse = true;
+
+      myComponent.series.colors.list = [
+        am4core.color("#845EC2"),
+        am4core.color("#e300ff"),
+        // am4core.color("#ee77c9"),
+        am4core.color("#FF6F91"),
+        am4core.color("#000000"),
+        // am4core.color("#00ffff"),
+        // am4core.color("#FF9671"),
+        // am4core.color("#FFC75F"),
+        am4core.color("#13ee00"),
+        am4core.color("#00a3d6"),
+
+      ];
+      // myComponent.series.labels.template.url = "https://stackoverflow.com/questions/tagged/{word}";
+      // myComponent.series.labels.template.urlTarget = "_blank";
       myComponent.series.labels.template.tooltipText = "{word}: {value}";
-      myComponent.series.maxCount = 50;
+      myComponent.series.maxCount = myComponent.maxCount;
       let hoverState = myComponent.series.labels.template.states.create("hover");
       hoverState.properties.fill = am4core.color("#FF0000");
+      // @ts-ignore
+      // let subtitle = myComponent.chart.titles.create();
+      // subtitle.text = "(click to open)";
 
       // @ts-ignore
-      let subtitle = myComponent.chart.titles.create();
-      subtitle.text = "(click to open)";
-
-      // @ts-ignore
-      let title = myComponent.chart.titles.create();
-      title.text = myComponent.Title;
-      title.fontSize = 20;
-      title.fontWeight = "800";
+      // let title = myComponent.chart.titles.create();
+      // title.text = myComponent.Title;
+      // title.fontSize = 20;
+      // title.fontWeight = "800";
       myComponent.dataObservable.subscribe((values) => {
-        // console.log("Changed --->");
-        // console.log(values)
         if (!values) {
           myComponent.triggerChange = false;
           return;
@@ -118,53 +142,60 @@ export class TagCloudChartComponent implements OnInit, OnDestroy, AfterViewInit 
         if (JSON.stringify(values) != JSON.stringify(myComponent.newData)) {
           myComponent.triggerChange = true;
           // myComponent.series.data = values;
-          values.sort((a, b) => {
-            return b[myComponent.valueProperty] - a[myComponent.valueProperty];
-          });
-          myComponent.newData = []
-          for (let i = 0; i < values.length && i < 30; i++) {
-            let value = values[i];
-            myComponent.newData.push(value);
-          }
-          console.log(myComponent.series.dataItems.length)
-          if (myComponent.series.dataItems.length > 100) {
-              myComponent.chart.hide(2000);
-            setTimeout(() => {
-              myComponent.series.clearCache();
-              myComponent.series.dataItems.clear();
-              myComponent.series.addData(myComponent.newData);
-              myComponent.chart.show(100);
 
-            }, 2000)
-          } else
-            myComponent.series.addData(myComponent.newData, 5);
-          // myComponent.series.data = myComponent.newData;
+          if (this.maxCount > 0) {
+            values.sort((a, b) => {
+              return b[myComponent.valueProperty] - a[myComponent.valueProperty];
+            });
+            myComponent.newData = []
+            for (let i = 0; i < values.length && i < myComponent.maxCount; i++) {
+              let value = values[i];
+              myComponent.newData.push(value);
+            }
+          } else myComponent.newData = values;
 
-        } else myComponent.triggerChange = false;
-
-      });
-      myComponent.series.setTimeout(randomValue, myComponent.refreshInterval);
-        myComponent.chart._eventDispatcher.on("hidden", () => {
-          myComponent.chart.show(2000);
-        })
-      function randomValue() {
-        setTimeout(() => {
-          myComponent.chart.show(2000);
-          myComponent.series.clearCache();
-          myComponent.series.dataItems.clear();
-          myComponent.series.addData(myComponent.newData, 5);
-        }, myComponent.fullRefreshInterval);
-        if (myComponent.triggerChange) {
-          myComponent.triggerChange = false;
-          setTimeout(() => {
-            myComponent.series.addData(myComponent.newData);
-            console.log(myComponent.series.dataItems.length + ", " + myComponent.series.data.length + ", ", myComponent.series.maxCount)
-          }, myComponent.transitionDuration + 2000)
         }
-        myComponent.chart.setTimeout(randomValue, myComponent.refreshInterval);
+      });
+      if (!myComponent.forceRefresh)
+        myComponent.chart.setTimeout(easeRefresh, 100);
+      else
+        myComponent.chart.setTimeout(hardRefresh, 100);
+
+      myComponent.series._eventDispatcher.on("arrangeended", () => {
+        myComponent.isReady = true;
+      })
+
+      function easeRefresh() { // Refresh isnt forced until the cloud is fully rendered
+        if (myComponent.isReady) {
+          if (myComponent.triggerChange) {
+            myComponent.triggerChange = false;
+            myComponent.isReady = false;
+            myComponent.chart.hide(myComponent.transitionDuration);
+
+            setTimeout(() => {
+              myComponent.series.data = myComponent.newData;
+              myComponent.chart.show();
+              myComponent.chart.setTimeout(easeRefresh, myComponent.refreshInterval);
+
+            }, 500);
+
+          } else
+            myComponent.chart.setTimeout(easeRefresh, myComponent.checkTransitionCompleteDuration);
+        } else {
+          console.log("Component still rendering... checking in ",)
+          myComponent.chart.setTimeout(easeRefresh, myComponent.checkTransitionCompleteDuration);
+        }
       }
 
-
+      function hardRefresh() {
+        // Refresh is forced even if the cloud is still being rendered
+        myComponent.chart.hide(myComponent.transitionDuration);
+        setTimeout(() => {
+          myComponent.series.data = myComponent.newData;
+          myComponent.chart.show();
+            myComponent.chart.setTimeout(hardRefresh, myComponent.refreshInterval);
+        }, myComponent.transitionDuration);
+      }
     });
   }
 

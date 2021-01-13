@@ -56,7 +56,7 @@ public class KafkaServiceImpl implements KafkaService {
         kafkaProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "fat1");
         kafkaProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         kafkaProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        kafkaProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        kafkaProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         ReceiverOptions<String, String> receiverOptions = ReceiverOptions.create(kafkaProperties);
 
         testTopicStream = createTopicCache(receiverOptions, "reddit-json");

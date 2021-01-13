@@ -37,9 +37,9 @@ public class StreamProcessorImplV6 implements StreamProcessor {
 
     private JsonMapper objectMapper = new JsonMapper();
     private JsonMapper jsonMapper = new JsonMapper();
-    private int minWordLength = 2;
-    private int maxWordLength = 30;
-    private Long minWordCount = 1L;
+    private int minWordLength = 3;//words with length lower(or equals) than this will be filtered out
+    private int maxWordLength = 31; //words with length greater than this will be filtered out
+    private Long minWordCount = 1L; //words found minWordCount times will be filtered out
 
     @Override
     public KStream<String, String> getSubredditMensionsStream(KStream<String, Submission> initialStream) {
@@ -74,31 +74,15 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                         return new KeyValue<String, String>("__data__", objectMapper.writeValueAsString(new SubredditData(windowed.key(), aLong)));
                     }
                 })
-//                .peek((key, value) -> {
-//                    try {
-//                        SubredditData subredditData = objectMapper.readValue(value,SubredditData.class);
-//                        System.out.println("key -> " + key + ", value: " + subredditData);
-//                    } catch (JsonProcessingException e) {
-//                        e.printStackTrace();
-//                    }
-//                        }
-//                )
-//
                 .groupByKey(Grouped.with(Serdes.String(), Serdes.String()))
                 .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)).advanceBy(Duration.ofSeconds(Common.WINDOW_SIZE)))
-
                 .aggregate(new Initializer<String>() {
 
                     @SneakyThrows
                     @Override
                     public String apply() {
-                        //                        SubredditData subredditData = new SubredditData();
-//                        subredditData.setSubreddit("test");
-//                        subredditData.setCount(5L);
                         List<SubredditData> subredditDataList = new ArrayList<>();
-//                        subredditDataList.add(subredditData);
                         String jsonResultString = jsonMapper.writeValueAsString(subredditDataList);
-//                        System.out.println("RESULT------>" + jsonResultString);
                         return jsonResultString;
                     }
                 }, new Aggregator<String, String, String>() {
@@ -119,8 +103,6 @@ public class StreamProcessorImplV6 implements StreamProcessor {
 
                         }
                         return valuesString;
-
-
                     }
                 }, Materialized.with(Serdes.String(), Serdes.String()))
                 .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.WINDOW_SIZE), Suppressed.BufferConfig.unbounded()))
@@ -138,8 +120,6 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                         return new KeyValue<>(windowed.key(), Common.maptoJsonString(Common.addDataToStreamMap(StreamType.REDDIT_MENTIONS_BATCH, map)));
                     }
                 });
-
-
     }
 
     @Override
@@ -249,27 +229,19 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                         return new KeyValue<>(windowed.key(), Common.maptoJsonString(Common.addDataToStreamMap(StreamType.REDDIT_POSTS_PROPORTION, map)));
                     }
                 });
-
-
     }
 
     @Override
     public KStream<String, String> getWordCount(KStream<String, Submission> intialStream) {
-         String urlRegex ="(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
-         String validPattern =urlRegex + "|" + ".+@\\w+" + "|";
-        Pattern pattern = Pattern.compile(validPattern);
         return intialStream
                 .flatMap(new KeyValueMapper<String, Submission, Iterable<KeyValue<String, Long>>>() {
                     @Override
                     public Iterable<KeyValue<String, Long>> apply(String s, Submission submission) {
-                        List<String> values = Arrays.asList(submission.getSelfText().toLowerCase().split("([ :]|\\t)"));
-                        return values.stream().map(value -> new KeyValue<String, Long>(value, 1L)).collect(Collectors.toList());
-
+                        List<String> values = Arrays.asList(submission.getSelfText().toLowerCase().trim().split("[ :\\t)@.,]"));
+                        return values.stream().map(value -> new KeyValue<String, Long>(value.trim(), 1L)).collect(Collectors.toList());
                     }
                 })
-                .filterNot((s, aLong) -> s.length() <= minWordLength || s.length() > maxWordLength)
-//                .filterNot((s, aLong) -> pattern.matcher(validPattern).find())
-//                ||
+                .filterNot((s, aLong) -> s.length() <= minWordLength || s.length() >= maxWordLength)
                 .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
                 .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)).advanceBy(Duration.ofSeconds(Common.WINDOW_SIZE)))
                 .count()
@@ -311,11 +283,8 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                             e.printStackTrace();
                             List<WordData> subredditDataList = new ArrayList<>();
                             return objectMapper.writeValueAsString(subredditDataList);
-
                         }
                         return valuesString;
-
-
                     }
                 }, Materialized.with(Serdes.String(), Serdes.String()))
                 .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.WINDOW_SIZE), Suppressed.BufferConfig.unbounded()))
@@ -329,7 +298,6 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                         Map<String, Object> map = new HashMap<>();
                         map.put("data", dataList);
                         map.put("duration", Common.WINDOW_SIZE);
-
                         return new KeyValue<>(windowed.key(), Common.maptoJsonString(Common.addDataToStreamMap(StreamType.WORD_COUNT_BATCH, map)));
                     }
                 });
