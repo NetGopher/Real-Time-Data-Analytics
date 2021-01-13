@@ -72,24 +72,28 @@ public class SparkConsumerService {
                 LocationStrategies.PreferConsistent(),
                 ConsumerStrategies.Subscribe(topics, kafkaConsumerConfig.consumerConfigs()));
 
-        //Count the posts and print
-        submissions
+        // Count the posts and print
+        /*submissions
                 .count()
                 .map(cnt -> "Popular subreddits in last 10 seconds (" + cnt + " total posts):")
                 .print();
+        */
 
+        // Clean up submissions
         JavaDStream<ConsumerRecord<String, Submission>> clean_submissions = submissions.filter((submission) ->{
             return !submission.value().isNsfw();
         });
 
-         clean_submissions
+        // Count the number of posts again
+        /* clean_submissions
                 .count()
                 .map(cnt -> "Clean subreddits in last 10 seconds (" + cnt + " total posts):")
                 .print();
-
+        */
         JavaDStream<String> posts_subreddit = clean_submissions.map((submission) -> {;
             return submission.value().getSubreddit();
         });
+
         posts_subreddit.foreachRDD( x-> {
             x.collect().stream().forEach(subreddit -> System.out.println("subreddit: "+subreddit));
         });
@@ -105,7 +109,6 @@ public class SparkConsumerService {
                     System.out.println("---------------------------------------------------------------");
                     List<Tuple2<Integer, String>> sorted;
                     JavaPairRDD<Integer, String> counts = rrdd.sortByKey(false);
-
                     JavaPairRDD<Integer, String> count_bigger_than_one = counts.filter((Function<Tuple2<Integer, String>, Boolean>) integerStringTuple2 -> integerStringTuple2._1 > 1);
                     JavaPairRDD<Integer, String> count_equals_one = counts.filter((Function<Tuple2<Integer, String>, Boolean>) integerStringTuple2 -> integerStringTuple2._1 == 1);
                     System.out.println("count_bigger_than_one count: "+ count_bigger_than_one.count());
@@ -141,17 +144,67 @@ public class SparkConsumerService {
 
                     json = objectMapper.writeValueAsString(results);
 
-                    Map<String, Object> props = new HashMap<>();
 
+                    Map<String, Object> props = new HashMap<>();
                     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
                     props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
                     props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+
                     KafkaProducer producer = new KafkaProducer<String, String>(props);
 
                     ProducerRecord<String, String> message = new ProducerRecord<>(outputTopic, null, json);
                     producer.send(message);
                 });
 
+        ArrayList<Map<String, Object>> subreddit_proportion = new ArrayList<Map<String, Object>>();
+
+        posts_subreddit
+                .mapToPair(subreddit -> new Tuple2<>(subreddit, 1))
+                .reduceByKey((a, b) -> Integer.sum(a, b))
+                .mapToPair(tuple -> new Tuple2<String, Integer>(String.valueOf("SR's with " + tuple._2 + (tuple._2 == 1 ? " Post" : "Posts")), 1))
+                .reduceByKey((a, b) -> Integer.sum(a, b))
+                .mapToPair(stringIntegerTuple2 -> stringIntegerTuple2.swap())
+                .foreachRDD(rrdd -> {
+                    subreddit_proportion.clear();
+                    System.out.println("---------------------------------------------------------------");
+                    List<Tuple2<Integer, String>> sorted;
+                    JavaPairRDD<Integer, String> counts = rrdd.sortByKey(false);
+
+                    sorted = counts.collect();
+                    sorted.forEach( record -> {
+                        Map<String, Object> obj =  new HashMap<>();
+                        obj.put("subreddit", record._2);
+                        obj.put("count", record._1);
+
+                        subreddit_proportion.add(obj);
+                        System.out.println(String.format("subreddit -> %s (%d posts)", record._2, record._1));
+                    });
+
+                    Map<String, Object> recordArrayobj = new HashMap<>();
+                    recordArrayobj.put("duration", batchInterval);
+                    recordArrayobj.put("data", subreddit_proportion);
+
+                    Map<String, Object> results = new HashMap<>();
+                    results.put("type", SteamType.REDDIT_POSTS_PROPORTION);
+                    results.put("data", recordArrayobj);
+                    System.out.println("results: " + results);
+                    ObjectMapper objectMapper = new ObjectMapper();
+
+                    String json = null;
+
+                    json = objectMapper.writeValueAsString(results);
+
+
+                    Map<String, Object> props = new HashMap<>();
+                    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+                    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+                    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+
+                    KafkaProducer producer = new KafkaProducer<String, String>(props);
+
+                    ProducerRecord<String, String> message = new ProducerRecord<>(outputTopic, null, json);
+                    producer.send(message);
+                });
         // Start the computation
         jssc.start();
         try {
