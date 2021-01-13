@@ -17,7 +17,6 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaInputDStream;
-import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka010.ConsumerStrategies;
 import org.apache.spark.streaming.kafka010.KafkaUtils;
@@ -26,13 +25,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.configurationprocessor.json.JSONArray;
-import org.springframework.boot.configurationprocessor.json.JSONException;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Service;
 import scala.Tuple2;
 import util.SteamType;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Service
@@ -49,7 +47,7 @@ public class SparkConsumerService {
     private final KafkaConsumerConfig kafkaConsumerConfig;
     private final Collection<String> topics;
 
-    private final Integer batchInterval=30;
+    private final Integer batchInterval=3;
 
     @Autowired
     public SparkConsumerService(SparkConf sparkConf,
@@ -60,36 +58,94 @@ public class SparkConsumerService {
         this.topics = Arrays.asList(topics);
     }
 
-    public void run(){
-        log.debug("Running Spark Consumer Service..");
+    private void startPostsPerMinuteStream(JavaInputDStream<ConsumerRecord<String, Submission>> input){
+        int windowTime = 60;
+        int slideTime = 60;
+        //PostsPerMinute
+        JavaDStream<String> windowedSubmissions = input
+                .map((submission) -> { return submission.value().getId(); })
+                .window(Durations.seconds(windowTime),Durations.seconds(slideTime));
+        windowedSubmissions.count()
+        .foreachRDD( rdd -> {
+            System.out.println("Stream Speed: " + rdd.collect().get(0));
 
-        // Create context with a 10 seconds batch interval
-        JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(batchInterval));
+            Map<String, Object> obj = new HashMap<>();
+            obj.put("count", rdd.collect().get(0));
+            obj.put("duration", windowTime);
+            Date date = new Date();
+            DateFormat format = new SimpleDateFormat("HH:mm");
+            obj.put("time", format.format(date));
 
-        // Create direct kafka stream with brokers and topics
-        JavaInputDStream<ConsumerRecord<String, Submission>> submissions = KafkaUtils.createDirectStream(
-                jssc,
-                LocationStrategies.PreferConsistent(),
-                ConsumerStrategies.Subscribe(topics, kafkaConsumerConfig.consumerConfigs()));
+            Map<String, Object> results = new HashMap<>();
+            results.put("type", SteamType.POSTS_PER_MINUTE);
+            results.put("data", obj);
 
+
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            String json = null;
+
+            json = objectMapper.writeValueAsString(results);
+
+            Map<String, Object> props = new HashMap<>();
+
+            props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+            props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+            props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+            KafkaProducer producer = new KafkaProducer<String, String>(props);
+
+            ProducerRecord<String, String> message = new ProducerRecord<>(outputTopic, null, json);
+            producer.send(message);
+        });
+    }
+
+    private void startSpeedStream(JavaInputDStream<ConsumerRecord<String, Submission>> input){
         //Count the posts and print
-        submissions
-                .count()
-                .map(cnt -> "Popular subreddits in last 10 seconds (" + cnt + " total posts):")
-                .print();
+        JavaDStream<Long> count = input
+                .count();
+        count.foreachRDD( rdd -> {
+            System.out.println("Stream Speed: " + rdd.collect().get(0));
 
-        JavaDStream<ConsumerRecord<String, Submission>> clean_submissions = submissions.filter((submission) ->{
+            Map<String, Object> obj = new HashMap<>();
+            obj.put("count", rdd.collect().get(0));
+            obj.put("duration", batchInterval);
+
+            Map<String, Object> results = new HashMap<>();
+            results.put("type", SteamType.COUNT);
+            results.put("data", obj);
+
+
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            String json = null;
+
+            json = objectMapper.writeValueAsString(results);
+
+            Map<String, Object> props = new HashMap<>();
+
+            props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+            props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+            props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+            KafkaProducer producer = new KafkaProducer<String, String>(props);
+
+            ProducerRecord<String, String> message = new ProducerRecord<>(outputTopic, null, json);
+            producer.send(message);
+        });
+    }
+
+    private void startSubredditMentionsBatchnSubredditProportionStream(JavaInputDStream<ConsumerRecord<String, Submission>> input){
+        int windowTime = 30;
+        int slideTime = 30;
+
+        // Clean up submissions
+        JavaDStream<ConsumerRecord<String, Submission>> clean_submissions = input.filter((submission) ->{
             return !submission.value().isNsfw();
         });
 
-         clean_submissions
-                .count()
-                .map(cnt -> "Clean subreddits in last 10 seconds (" + cnt + " total posts):")
-                .print();
+        JavaDStream<String> posts_subreddit = clean_submissions
+                .map((submission) -> { return submission.value().getSubreddit(); })
+                .window(Durations.seconds(windowTime),Durations.seconds(slideTime));
 
-        JavaDStream<String> posts_subreddit = clean_submissions.map((submission) -> {;
-            return submission.value().getSubreddit();
-        });
         posts_subreddit.foreachRDD( x-> {
             x.collect().stream().forEach(subreddit -> System.out.println("subreddit: "+subreddit));
         });
@@ -105,7 +161,6 @@ public class SparkConsumerService {
                     System.out.println("---------------------------------------------------------------");
                     List<Tuple2<Integer, String>> sorted;
                     JavaPairRDD<Integer, String> counts = rrdd.sortByKey(false);
-
                     JavaPairRDD<Integer, String> count_bigger_than_one = counts.filter((Function<Tuple2<Integer, String>, Boolean>) integerStringTuple2 -> integerStringTuple2._1 > 1);
                     JavaPairRDD<Integer, String> count_equals_one = counts.filter((Function<Tuple2<Integer, String>, Boolean>) integerStringTuple2 -> integerStringTuple2._1 == 1);
                     System.out.println("count_bigger_than_one count: "+ count_bigger_than_one.count());
@@ -128,7 +183,7 @@ public class SparkConsumerService {
                     });
 
                     Map<String, Object> recordArrayobj = new HashMap<>();
-                    recordArrayobj.put("duration", batchInterval);
+                    recordArrayobj.put("duration", windowTime);
                     recordArrayobj.put("data", recordArray);
 
                     Map<String, Object> results = new HashMap<>();
@@ -141,16 +196,88 @@ public class SparkConsumerService {
 
                     json = objectMapper.writeValueAsString(results);
 
-                    Map<String, Object> props = new HashMap<>();
 
+                    Map<String, Object> props = new HashMap<>();
                     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
                     props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
                     props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+
                     KafkaProducer producer = new KafkaProducer<String, String>(props);
 
                     ProducerRecord<String, String> message = new ProducerRecord<>(outputTopic, null, json);
                     producer.send(message);
                 });
+
+
+        ArrayList<Map<String, Object>> subreddit_proportion = new ArrayList<Map<String, Object>>();
+
+        posts_subreddit
+                .mapToPair(subreddit -> new Tuple2<>(subreddit, 1))
+                .reduceByKey((a, b) -> Integer.sum(a, b))
+                .mapToPair(tuple -> new Tuple2<String, Integer>(String.valueOf("SR's with " + tuple._2 + (tuple._2 == 1 ? " Post" : "Posts")), 1))
+                .reduceByKey((a, b) -> Integer.sum(a, b))
+                .mapToPair(stringIntegerTuple2 -> stringIntegerTuple2.swap())
+                .foreachRDD(rrdd -> {
+                    subreddit_proportion.clear();
+                    System.out.println("---------------------------------------------------------------");
+                    List<Tuple2<Integer, String>> sorted;
+                    JavaPairRDD<Integer, String> counts = rrdd.sortByKey(false);
+
+                    sorted = counts.collect();
+                    sorted.forEach( record -> {
+                        Map<String, Object> obj =  new HashMap<>();
+                        obj.put("subreddit", record._2);
+                        obj.put("count", record._1);
+
+                        subreddit_proportion.add(obj);
+                        System.out.println(String.format("subreddit -> %s (%d posts)", record._2, record._1));
+                    });
+
+                    Map<String, Object> recordArrayobj = new HashMap<>();
+                    recordArrayobj.put("duration", windowTime);
+                    recordArrayobj.put("data", subreddit_proportion);
+
+                    Map<String, Object> results = new HashMap<>();
+                    results.put("type", SteamType.REDDIT_POSTS_PROPORTION);
+                    results.put("data", recordArrayobj);
+                    System.out.println("results: " + results);
+                    ObjectMapper objectMapper = new ObjectMapper();
+
+                    String json = null;
+
+                    json = objectMapper.writeValueAsString(results);
+
+
+                    Map<String, Object> props = new HashMap<>();
+                    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+                    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+                    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+
+                    KafkaProducer producer = new KafkaProducer<String, String>(props);
+
+                    ProducerRecord<String, String> message = new ProducerRecord<>(outputTopic, null, json);
+                    producer.send(message);
+                });
+    }
+
+    public void run(){
+        log.debug("Running Spark Consumer Service..");
+
+        // Create context with a 10 seconds batch interval
+        JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(batchInterval));
+
+        // Create direct kafka stream with brokers and topics
+        JavaInputDStream<ConsumerRecord<String, Submission>> submissions = KafkaUtils.createDirectStream(
+                jssc,
+                LocationStrategies.PreferConsistent(),
+                ConsumerStrategies.Subscribe(topics, kafkaConsumerConfig.consumerConfigs()));
+
+        this.startPostsPerMinuteStream(submissions);
+
+        this.startSpeedStream(submissions);
+
+        this.startSubredditMentionsBatchnSubredditProportionStream(submissions);
+
 
         // Start the computation
         jssc.start();

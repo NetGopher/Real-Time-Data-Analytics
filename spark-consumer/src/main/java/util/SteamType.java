@@ -5,4 +5,6 @@ public class SteamType {
     public static final String COUNT = "COUNT_STREAM";
     public static final String REDDIT_MENTIONS = "REDDIT_MENTIONS";
     public static final String REDDIT_MENTIONS_BATCH = "REDDIT_MENTIONS_BATCH";
+    public static final String REDDIT_POSTS_PROPORTION = "REDDIT_POSTS_PROPORTION";
+    public static final String POSTS_PER_MINUTE = "POSTS_PER_MINUTE";
 }
