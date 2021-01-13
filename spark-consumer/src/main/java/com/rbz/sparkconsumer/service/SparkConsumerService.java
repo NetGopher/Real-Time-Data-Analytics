@@ -13,6 +13,7 @@ import org.apache.kafka.common.utils.Java;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
@@ -32,6 +33,7 @@ import util.SteamType;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class SparkConsumerService {
@@ -260,6 +262,79 @@ public class SparkConsumerService {
                 });
     }
 
+    private void startWordCountStream(JavaInputDStream<ConsumerRecord<String, Submission>> input){
+        int windowTime = 30;
+        int slideTime = 30;
+        int minWordLength = 4;
+        int maxWordLength = 31;
+        Long minWordCount = 1L;
+
+        // Clean up submissions
+        JavaDStream<ConsumerRecord<String, Submission>> clean_submissions = input.filter((submission) ->{
+            return !submission.value().isNsfw();
+        });
+
+        JavaDStream<String> posts_selfText = clean_submissions
+                .map((submission) -> { return submission.value().getSelfText(); })
+                .window(Durations.seconds(windowTime),Durations.seconds(slideTime));
+
+        ArrayList<Map<String, Object>> words_count = new ArrayList<Map<String, Object>>();
+
+        posts_selfText
+                .flatMap(body -> Arrays.asList(body.toLowerCase().trim().split("[ :\\t)@.,]")).iterator())
+                .mapToPair(s -> new Tuple2<>(s, 1))
+                .filter(tuple -> tuple._1.length() > minWordLength && tuple._1.length() < maxWordLength)
+                .reduceByKey((i1, i2) -> i1 + i2)
+                .filter(tuple -> tuple._2 > 1)
+                .mapToPair(stringIntegerTuple2 -> stringIntegerTuple2.swap())
+                .foreachRDD(rrdd -> {
+                    words_count.clear();
+                    System.out.println("---------------------------------------------------------------");
+                    List<Tuple2<Integer, String>> sorted;
+                    JavaPairRDD<Integer, String> counts = rrdd.sortByKey(false);
+
+                    sorted = counts.collect();
+                    sorted.forEach( record -> {
+                        Map<String, Object> obj =  new HashMap<>();
+                        obj.put("word", record._2);
+                        obj.put("count", record._1);
+
+                        words_count.add(obj);
+                        System.out.println(String.format("word -> %s (%d)", record._2, record._1));
+                    });
+
+                    Map<String, Object> recordArrayobj = new HashMap<>();
+                    recordArrayobj.put("duration", windowTime);
+                    recordArrayobj.put("data", words_count);
+
+                    Map<String, Object> results = new HashMap<>();
+                    results.put("type", SteamType.WORD_COUNT_BATCH);
+                    results.put("data", recordArrayobj);
+                    System.out.println("results: " + results);
+                    ObjectMapper objectMapper = new ObjectMapper();
+
+                    String json = null;
+
+                    json = objectMapper.writeValueAsString(results);
+
+
+                    Map<String, Object> props = new HashMap<>();
+                    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+                    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+                    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+
+                    KafkaProducer producer = new KafkaProducer<String, String>(props);
+
+                    ProducerRecord<String, String> message = new ProducerRecord<>(outputTopic, null, json);
+                    producer.send(message);
+                });
+                /*.flatMap(body -> {
+                    List<String> values = Arrays.asList(body.toLowerCase().trim().split("[ :\\t)@.,]"));
+                    return values.stream().map(value -> new Tuple2(value.trim(), 1L)).collect(Collectors.toList());
+                })*/
+
+    }
+
     public void run(){
         log.debug("Running Spark Consumer Service..");
 
@@ -278,6 +353,7 @@ public class SparkConsumerService {
 
         this.startSubredditMentionsBatchnSubredditProportionStream(submissions);
 
+        this.startWordCountStream(submissions);
 
         // Start the computation
         jssc.start();
