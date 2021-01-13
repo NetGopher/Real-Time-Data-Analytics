@@ -17,6 +17,7 @@ import { FooterComponent } from './shared/footer/footer.component';
 import chart_components_module from "./components/chart_components.module";
 import { BlankPageComponent } from './pages/blank-page/blank-page.component';
 import { HomeComponent } from './pages/home/home.component';
+import {environment} from "../environments/environment";
 
 @NgModule({
   declarations: [
@@ -33,7 +34,9 @@ import { HomeComponent } from './pages/home/home.component';
         AppRoutingModule,
         NgxsModule.forRoot([
             KafkaState
-        ]),
+        ],{
+          developmentMode:!environment.production
+        }),
         NgxsWebsocketPluginModule.forRoot({
             url: 'ws://localhost:8080/websocket'
         }),

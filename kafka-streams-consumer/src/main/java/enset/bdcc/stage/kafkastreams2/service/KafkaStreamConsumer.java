@@ -34,6 +34,7 @@ public class KafkaStreamConsumer {
     private KafkaStreamConfig kafkaStreamConfig;
     @Autowired
     private StreamProcessor streamProcessor;
+
     public void start() {
 
         StreamsBuilder streamsBuilder = new StreamsBuilder();
@@ -43,6 +44,7 @@ public class KafkaStreamConsumer {
 //                .merge(streamProcessor.getSubredditMensionsStream(initialStream))
 //                .merge(streamProcessor.calculateStreamCount(initialStream))
 //                .merge(streamProcessor.getSubredditPostsProportion(initialStream))
+                .merge(streamProcessor.getNsfwProportion(initialStream))
                 .to("reddit-json", Produced.with(Serdes.String(), Serdes.String()));
 
         Topology topology = streamsBuilder.build();

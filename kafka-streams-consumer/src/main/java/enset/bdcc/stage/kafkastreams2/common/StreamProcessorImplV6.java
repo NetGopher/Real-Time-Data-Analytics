@@ -8,10 +8,7 @@ import com.fasterxml.jackson.databind.ser.std.ArraySerializerBase;
 import enset.bdcc.stage.kafkastreams2.config.StreamType;
 import enset.bdcc.stage.kafkastreams2.entities.WordData;
 import enset.bdcc.stage.kafkastreams2.serializers.CustomSerdes;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.SneakyThrows;
+import lombok.*;
 import net.dean.jraw.models.Submission;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
@@ -304,4 +301,81 @@ public class StreamProcessorImplV6 implements StreamProcessor {
 
 
     }
+
+    @Override
+    public KStream<String, String> getNsfwProportion(KStream<String, Submission> intialStream) {
+        return intialStream.map((s, submission) -> new KeyValue<>(submission.isNsfw() ? "NSFW" : "NOT_NSFW", 1L))
+                .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)).advanceBy(Duration.ofSeconds(Common.WINDOW_SIZE)))
+                .count()
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.WINDOW_SIZE), Suppressed.BufferConfig.unbounded()))
+                .toStream()
+                      .map(new KeyValueMapper<Windowed<String>, Long, KeyValue<String, String>>() {
+                    @SneakyThrows
+                    @Override
+                    public KeyValue<String, String> apply(Windowed<String> windowed, Long aLong) {
+                        return new KeyValue<String, String>("__data__", objectMapper.writeValueAsString(new KeyValuePair(windowed.key(), aLong)));
+                    }
+                })
+//
+                .groupByKey(Grouped.with(Serdes.String(), Serdes.String()))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)).advanceBy(Duration.ofSeconds(Common.WINDOW_SIZE)))
+
+                .aggregate(new Initializer<String>() {
+
+                    @SneakyThrows
+                    @Override
+                    public String apply() {
+                        List<KeyValuePair> subredditDataList = new ArrayList<>();
+                        String jsonResultString = jsonMapper.writeValueAsString(subredditDataList);
+                        return jsonResultString;
+                    }
+                }, new Aggregator<String, String, String>() {
+                    @SneakyThrows
+                    @Override
+                    public String apply(String key, String value, String aggregateValue) {
+                        KeyValuePair newKeyValuePair = objectMapper.readValue(value, KeyValuePair.class);
+                        String valuesString = null;
+                        try {
+                            KeyValuePair[] values = jsonMapper.readValue(aggregateValue, KeyValuePair[].class);
+                            List<KeyValuePair> dataList = new ArrayList<>(Arrays.asList(values));
+                            dataList.add(newKeyValuePair);
+                            valuesString = jsonMapper.writeValueAsString(dataList.toArray());
+                        } catch (JsonProcessingException e) {
+                            e.printStackTrace();
+                            List<KeyValuePair> subredditDataList = new ArrayList<>();
+                            return objectMapper.writeValueAsString(subredditDataList);
+
+                        }
+                        return valuesString;
+
+
+                    }
+                }, Materialized.with(Serdes.String(), Serdes.String()))
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.WINDOW_SIZE), Suppressed.BufferConfig.unbounded()))
+                .toStream()
+                .map(new KeyValueMapper<Windowed<String>, String, KeyValue<String, String>>() {
+                    @SneakyThrows
+                    @Override
+                    public KeyValue<String, String> apply(Windowed<String> windowed, String s) {
+                        KeyValuePair[] values = jsonMapper.readValue(s, KeyValuePair[].class);
+                        List<KeyValuePair> dataList = new ArrayList<>(Arrays.asList(values));
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("data", dataList);
+                        map.put("duration", Common.WINDOW_SIZE);
+
+                        return new KeyValue<>(windowed.key(), Common.maptoJsonString(Common.addDataToStreamMap(StreamType.NSFW_COUNT_BATCH, map)));
+                    }
+                });
+
+    }
+}
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
+class KeyValuePair {
+    private String key;
+    private Long value;
 }

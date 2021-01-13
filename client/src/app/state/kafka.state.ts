@@ -12,6 +12,7 @@ export class KafkaStateModel {
     messages: []
   }
 })
+@Injectable()
 export class KafkaState {
   @Selector()
   static messages(state: KafkaStateModel): string[] {

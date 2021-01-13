@@ -3,6 +3,7 @@ import {ConnectWebSocket} from "@ngxs/websocket-plugin";
 import {Observable, Subject} from "rxjs";
 import {KafkaState} from "../state/kafka.state";
 import {
+  KeyValuePairBatch,
   PostsSpeed,
   StreamData,
   StreamTypes,
@@ -39,11 +40,15 @@ export class DataService {
         case StreamTypes.COUNT_STREAM: // "type == 'COUNT_STREAM'"
           this.kafkaStreamHandlerService.handlePostsSpeed(value.data as PostsSpeed);
           break;
+        case StreamTypes.NSFW_COUNT_BATCH:
+          this.kafkaStreamHandlerService.handleNSFWMeter(value.data as KeyValuePairBatch);
+          break;
         case StreamTypes.WORD_COUNT_BATCH: // "type == 'WORD_COUNT_BATCH'"
           this.kafkaStreamHandlerService.handleWordCountBatch(value.data as WordCountBatch);
           break;
         default:
-          console.log(value.data)
+          console.log(value.type, " is undefined StreamType!")
+          console.log(value.type)
       }
 
     }, error => {
