@@ -5,6 +5,7 @@ import {ConnectWebSocket} from "@ngxs/websocket-plugin";
 import {Observable} from "rxjs";
 import {KafkaState} from "../state/kafka.state";
 import {
+  KeyValuePairBatch,
   PostsPerMinuteItem,
   PostsSpeed,
   StreamData,
@@ -35,6 +36,7 @@ export class SparkDataService {
           break;
         case StreamTypes.REDDIT_POSTS_PROPORTION: // "type == 'REDDIT_POSTS_PROPORTION'"
           this.sparkStreamHandlerService.handleRedditPostsProportion(value.data as SubredditMentionBatch)
+          break;
         case StreamTypes.COUNT_STREAM: // "type == 'COUNT_STREAM'"
           //console.log("Value:" + JSON.stringify(value))
           this.sparkStreamHandlerService.handlePostsSpeed(value.data as PostsSpeed);
@@ -42,8 +44,12 @@ export class SparkDataService {
         case StreamTypes.POSTS_PER_MINUTE: // "type == 'POSTS_PER_MINUTE'"
           console.log("Value:" + JSON.stringify(value))
           this.sparkStreamHandlerService.handlePostsPerMinuteItem(value.data as PostsPerMinuteItem);
+          break;
         case StreamTypes.WORD_COUNT_BATCH: // "type == 'WORD_COUNT_BATCH'"
           this.sparkStreamHandlerService.handleWordCountBatch(value.data as WordCountBatch);
+          break;
+        case StreamTypes.NSFW_COUNT_BATCH: // "type == 'NSFW_COUNT_BATCH'"
+          this.sparkStreamHandlerService.handleNSFWCountBatch(value.data as KeyValuePairBatch);
           break;
         default:
           console.log(value.data)

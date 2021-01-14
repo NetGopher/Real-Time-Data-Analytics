@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 import {
+  KeyValuePair,
+  KeyValuePairBatch,
   PostsPerMinuteItem,
   PostsSpeed,
   SubredditMention,
@@ -26,6 +28,8 @@ export class SparkStreamHandlerService {
   public postsPerMinuteObserver: BehaviorSubject<PostsPerMinuteItem> = new BehaviorSubject<PostsPerMinuteItem>(null);
   public wordData: WordData[] = []
   public wordDataObserver: BehaviorSubject<WordData[]> = new BehaviorSubject<WordData[]>(null);
+  public nsfwData: KeyValuePair[];
+  public nsfwDataObserver: BehaviorSubject<KeyValuePair[]> = new BehaviorSubject<KeyValuePair[]>(null);
 
 
   constructor() { }
@@ -57,6 +61,12 @@ export class SparkStreamHandlerService {
   handleWordCountBatch(data: WordCountBatch) {
     this.wordData = data.data;
     this.wordDataObserver.next(data.data);
+  }
+
+  handleNSFWCountBatch(data: KeyValuePairBatch) {
+    if(!data.data) return;
+    this.nsfwData = data.data;
+    this.nsfwDataObserver.next(data.data);
   }
 
 }

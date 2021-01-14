@@ -69,7 +69,7 @@ export class CircleComponent implements OnInit, OnDestroy, AfterViewInit {
   private formattedCapacity: string;
   public triggerChange: boolean = true;
 
-  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone, private dataService: DataService, private kafkaStreamHander: KafkaStreamHandlerService) {
+  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone) {
   }
 
   randomIdValueString: string;
@@ -107,10 +107,14 @@ export class CircleComponent implements OnInit, OnDestroy, AfterViewInit {
       let gradient = new am4core.LinearGradient();
       // let gradient = new am4core.RadialGradient();
       gradient.addColor(am4core.color("cyan"));
+      gradient.addColor(am4core.color("cyan"));
+      gradient.addColor(am4core.color("cyan"));
+      gradient.addColor(am4core.color("cyan"));
+      gradient.addColor(am4core.color("cyan"));
       gradient.addColor(am4core.color("green"));
       gradient.addColor(am4core.color("orange"));
       gradient.addColor(am4core.color("red"));
-      gradient.rotation= 90;
+      gradient.rotation= -90;
       ctx.waves = ctx.chartContainer.createChild(am4core.WavedRectangle);
       ctx.waves.fill = gradient
       ctx.waves.mask = ctx.circleMask;
@@ -195,6 +199,7 @@ export class CircleComponent implements OnInit, OnDestroy, AfterViewInit {
                 ctx.value = Number(value[ctx.valueProperty]);
               }
               ctx.capacity = total;
+              ctx.value = ctx.capacity - 10
             }
           }
         }
