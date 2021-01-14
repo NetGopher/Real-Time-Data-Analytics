@@ -285,7 +285,7 @@ public class SparkConsumerService {
                 .mapToPair(s -> new Tuple2<>(s, 1))
                 .filter(tuple -> tuple._1.length() > minWordLength && tuple._1.length() < maxWordLength)
                 .reduceByKey((i1, i2) -> i1 + i2)
-                .filter(tuple -> tuple._2 > 1)
+                .filter(tuple -> tuple._2 > minWordCount)
                 .mapToPair(stringIntegerTuple2 -> stringIntegerTuple2.swap())
                 .foreachRDD(rrdd -> {
                     words_count.clear();
@@ -328,11 +328,58 @@ public class SparkConsumerService {
                     ProducerRecord<String, String> message = new ProducerRecord<>(outputTopic, null, json);
                     producer.send(message);
                 });
-                /*.flatMap(body -> {
-                    List<String> values = Arrays.asList(body.toLowerCase().trim().split("[ :\\t)@.,]"));
-                    return values.stream().map(value -> new Tuple2(value.trim(), 1L)).collect(Collectors.toList());
-                })*/
 
+    }
+    private void startNSFWProportionStream(JavaInputDStream<ConsumerRecord<String, Submission>> input){
+        int windowTime = 30;
+        int slideTime = 30;
+
+        JavaDStream<String> windowedPosts = input
+                .map((submission) -> { return submission.value().isNsfw() ? "NSFW" : "NOT_NSFW"; })
+                .window(Durations.seconds(windowTime),Durations.seconds(slideTime));
+
+        ArrayList<Map<String, Object>> nsfw_batch = new ArrayList<Map<String, Object>>();
+
+        windowedPosts
+                .mapToPair((s) -> new Tuple2<>(s, 1))
+                .reduceByKey((i1, i2) -> i1 + i2)
+                .mapToPair(stringIntegerTuple2 -> stringIntegerTuple2.swap())
+                .foreachRDD(rrdd -> {
+                    nsfw_batch.clear();
+                    rrdd.collect().forEach( record -> {
+                        Map<String, Object> obj =  new HashMap<>();
+                        obj.put("key", record._2);
+                        obj.put("value", record._1);
+
+                        nsfw_batch.add(obj);
+                        //System.out.println(String.format("word -> %s (%d)", record._2, record._1));
+                    });
+
+                    Map<String, Object> recordArrayobj = new HashMap<>();
+                    recordArrayobj.put("duration", windowTime);
+                    recordArrayobj.put("data", nsfw_batch);
+
+                    Map<String, Object> results = new HashMap<>();
+                    results.put("type", SteamType.NSFW_COUNT_BATCH);
+                    results.put("data", recordArrayobj);
+                    System.out.println("results: " + results);
+                    ObjectMapper objectMapper = new ObjectMapper();
+
+                    String json = null;
+
+                    json = objectMapper.writeValueAsString(results);
+
+
+                    Map<String, Object> props = new HashMap<>();
+                    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+                    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+                    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+
+                    KafkaProducer producer = new KafkaProducer<String, String>(props);
+
+                    ProducerRecord<String, String> message = new ProducerRecord<>(outputTopic, null, json);
+                    producer.send(message);
+                });
     }
 
     public void run(){
@@ -349,11 +396,13 @@ public class SparkConsumerService {
 
         this.startPostsPerMinuteStream(submissions);
 
-        this.startSpeedStream(submissions);
+        //this.startSpeedStream(submissions);
 
-        this.startSubredditMentionsBatchnSubredditProportionStream(submissions);
+        //this.startSubredditMentionsBatchnSubredditProportionStream(submissions);
 
-        this.startWordCountStream(submissions);
+        //this.startWordCountStream(submissions);
+
+        this.startNSFWProportionStream(submissions);
 
         // Start the computation
         jssc.start();
