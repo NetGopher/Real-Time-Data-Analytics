@@ -18,6 +18,5 @@ export class KafkaStreamConsumerComponent implements OnInit {
 
 
   onClick() {
-    console.log("zabobi")
   }
 }

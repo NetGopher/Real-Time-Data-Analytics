@@ -5,7 +5,8 @@ import {
   SubredditMention,
   SubredditMentionBatch,
   WordCountBatch,
-  WordData,KeyValuePair
+  ActiveUsersPerActiveSubredditsBatch,
+  WordData, KeyValuePair, SubredditUsers
 } from "../other/Entities";
 import {BehaviorSubject, Observable, Subject} from "rxjs";
 
@@ -25,6 +26,8 @@ export class KafkaStreamHandlerService {
   public postsSpeedObserver: BehaviorSubject<number> = new BehaviorSubject<number>(1);
   public nsfwData: KeyValuePair[];
   public nsfwDataObserver: BehaviorSubject<KeyValuePair[]> = new BehaviorSubject<KeyValuePair[]>(null);
+  public activeUsersPerActiveSubredditsData: SubredditUsers[];
+  public activeUsersPerActiveSubredditsDataObserver: BehaviorSubject<SubredditUsers[]> = new BehaviorSubject<SubredditUsers[]>(null);
 
   constructor() {
   }
@@ -42,26 +45,44 @@ export class KafkaStreamHandlerService {
   }
 
   handleRedditMentionsBatch(data: SubredditMentionBatch) {
-    if(!data.data) return;
+    if (!data.data) return;
     this.subredditMentions = data.data;
     this.subredditMentionsObserver.next(data.data);
   }
 
   handleRedditPostsProportion(data: SubredditMentionBatch) {
-    if(!data.data) return;
+    if (!data.data) return;
     this.subredditPostsProportion = data.data;
     this.subredditPostsProportionObserver.next(data.data);
   }
 
   handleWordCountBatch(data: WordCountBatch) {
-    if(!data.data) return;
+    if (!data.data) return;
     this.wordData = data.data;
     this.wordDataObserver.next(data.data);
   }
 
   handleNSFWMeter(data: KeyValuePairBatch) {
-    if(!data.data) return;
+    if (!data.data) return;
     this.nsfwData = data.data;
     this.nsfwDataObserver.next(data.data);
+  }
+
+  handleActiveUsersPerActiveSubreddits(data: ActiveUsersPerActiveSubredditsBatch) {
+    if (!data.data) return;
+    // let convertedData: any = []
+    // for (const value of data.data) {
+    //   let obj: any = {}
+    //   obj.count = value.value
+    //   obj.key = value.key
+    //   obj.children = value.children
+    //   convertedData.push(obj);
+    // }
+
+    // this.activeUsersPerActiveSubredditsData = convertedData
+    // this.activeUsersPerActiveSubredditsDataObserver.next(convertedData);
+    this.activeUsersPerActiveSubredditsData = data.data
+    console.log(data.data)
+    this.activeUsersPerActiveSubredditsDataObserver.next(data.data);
   }
 }

@@ -19,6 +19,7 @@ import * as am4plugins_wordCloud from "@amcharts/amcharts4/plugins/wordCloud";
 
 import {WordCloudSeries} from "@amcharts/amcharts4/plugins/wordCloud";
 import {KeyValuePair} from "../../../other/Entities";
+import {ColorSet} from "@amcharts/amcharts4/core";
 
 
 @Component({
@@ -69,7 +70,7 @@ export class CircleComponent implements OnInit, OnDestroy, AfterViewInit {
   private formattedCapacity: string;
   public triggerChange: boolean = true;
 
-  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone, private dataService: DataService, private kafkaStreamHander: KafkaStreamHandlerService) {
+  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone, private kafkaStreamHander: KafkaStreamHandlerService) {
   }
 
   randomIdValueString: string;
@@ -105,14 +106,14 @@ export class CircleComponent implements OnInit, OnDestroy, AfterViewInit {
 
       ctx.circleMask = ctx.chartContainer.createChild(am4core.Circle);
       let gradient = new am4core.LinearGradient();
-      // let gradient = new am4core.RadialGradient();
       gradient.addColor(am4core.color("cyan"));
       gradient.addColor(am4core.color("green"));
+      gradient.addColor(am4core.color("yellow"));
       gradient.addColor(am4core.color("orange"));
       gradient.addColor(am4core.color("red"));
-      gradient.rotation= 90;
+      gradient.rotation = 90;
       ctx.waves = ctx.chartContainer.createChild(am4core.WavedRectangle);
-      ctx.waves.fill = gradient
+      ctx.waves.fill = gradient;
       ctx.waves.mask = ctx.circleMask;
       ctx.waves.horizontalCenter = "middle";
       ctx.waves.waveHeight = 10;
@@ -139,12 +140,13 @@ export class CircleComponent implements OnInit, OnDestroy, AfterViewInit {
         }, ctx.labelRadius, ctx.labelRadius);
         ctx.capacityLabel.locationOnPath = 0.5;
 
-        setValue(ctx.value);
+        setValue(ctx.value, ctx.capacity);
       })
 
 
-      function setValue(value) {
-        let y = -ctx.circle.radius - ctx.waves.waveHeight + (1 - value / ctx.capacity) * ctx.circle.pixelRadius * 2;
+      function setValue(value, capacity) {
+        console.log("value", value, ", capacity: ", capacity)
+        let y = -ctx.circle.radius - ctx.waves.waveHeight + (1 - value / capacity) * ctx.circle.pixelRadius * 2;
         ctx.waves.animate([{property: "y", to: y}, {property: "waveHeight", to: 10, from: 15}, {
           property: "x",
           from: -50,
@@ -207,7 +209,7 @@ export class CircleComponent implements OnInit, OnDestroy, AfterViewInit {
           ctx.capacityLabel.text = "Capacity " + ctx.formattedCapacity + " " + ctx.capacityType + "(s)";
           ctx.formattedValue = ctx.component.numberFormatter.format(ctx.value, "#.#a");
           ctx.formattedValue = ctx.formattedValue.toUpperCase();
-          ctx.label.text = ctx.formattedValue + " " + ctx.targetCategory + " " +  ctx.capacityType + "(s)";
+          ctx.label.text = ctx.formattedValue + " " + ctx.targetCategory + " " + ctx.capacityType + "(s)";
           ctx.component.events.dispatchImmediately("maxsizechanged", null);
           ctx.component.setTimeout(refresh, ctx.refreshInterval);
         } else ctx.component.setTimeout(refresh, 1000);

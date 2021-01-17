@@ -6,7 +6,6 @@
 </div>
 
 <!-- Content Row -->
-
 <div class="row">
 
   <!-- Area Chart -->
@@ -15,7 +14,7 @@
       <!-- Card Header - Dropdown -->
       <div
         class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-        <h6 class="m-0 font-weight-bold text-primary">Speed</h6>
+        <h6 class="m-0 font-weight-bold text-primary">Submissions Speed</h6>
         <div class="dropdown no-arrow">
           <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink5"
              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -44,7 +43,7 @@
       <!-- Card Header - Dropdown -->
       <div
         class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-        <h6 class="m-0 font-weight-bold text-primary">Donut</h6>
+        <h6 class="m-0 font-weight-bold text-primary">new submissions proportion per subreddit </h6>
         <div class="dropdown no-arrow">
           <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink7"
              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -68,13 +67,13 @@
       </div>
     </div>
   </div>
-<!--  World Cloud chart -->
+  <!--  World Cloud chart -->
   <div class="col-xl-6 col-lg-6">
     <div class="card shadow mb-4">
       <!-- Card Header - Dropdown -->
       <div
         class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-        <h6 class="m-0 font-weight-bold text-primary">Word Cloud</h6>
+        <h6 class="m-0 font-weight-bold text-primary">Frequent used words</h6>
         <div class="dropdown no-arrow">
           <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -92,7 +91,9 @@
       </div>
       <!-- Card Body -->
       <div class="card-body">
-        <app-tag-cloud-chart [dataObservable]="kafkaStreamHandler.wordDataObserver" [initialData]="kafkaStreamHandler.wordData" [valueProperty]="'count'" [categoryProperty]="'word'" [title]="'Most used words'"></app-tag-cloud-chart>
+        <app-tag-cloud-chart [dataObservable]="kafkaStreamHandler.wordDataObserver"
+                             [initialData]="kafkaStreamHandler.wordData" [valueProperty]="'count'"
+                             [categoryProperty]="'word'" [title]="'Most used words'" [maxCount]="50"></app-tag-cloud-chart>
       </div>
     </div>
   </div>
@@ -102,7 +103,7 @@
       <!-- Card Header - Dropdown -->
       <div
         class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-        <h6 class="m-0 font-weight-bold text-primary">NSFW Balloon
+        <h6 class="m-0 font-weight-bold text-primary">NSFW-Meter: NSFW submissions vs regular submissions
         </h6>
         <div class="dropdown no-arrow">
           <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink3s"
@@ -121,7 +122,9 @@
       </div>
       <!-- Card Body -->
       <div class="card-body">
-       <app-circle [dataObservable]="kafkaStreamHandler.nsfwDataObserver" [initialData]="kafkaStreamHandler.wordData" [categoryProperty]="'key'" [valueProperty]="'value'" [capacityType]="'Post'" [targetCategory]="'NSFW'"></app-circle>
+        <app-circle [dataObservable]="kafkaStreamHandler.nsfwDataObserver" [initialData]="kafkaStreamHandler.wordData"
+                    [categoryProperty]="'key'" [valueProperty]="'value'" [capacityType]="'Post'"
+                    [targetCategory]="'NSFW'"></app-circle>
       </div>
     </div>
   </div>
@@ -152,6 +155,35 @@
         <app-donut [dataObservable]="kafkaStreamHandler.subredditPostsProportionObserver"
                    [categoryProperty]="'subreddit'" [valueProperty]="'count'"
                    [initialData]="kafkaStreamHandler.subredditPostsProportion"></app-donut>
+      </div>
+    </div>
+  </div>
+  <div class="col-12">
+    <!--    Force Directed Network -->
+    <div class="card shadow mb-4">
+      <!-- Card Header - Dropdown -->
+      <div
+        class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">Active users per active subreddits</h6>
+        <div class="dropdown no-arrow">
+          <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink5z"
+             data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+          </a>
+          <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+               aria-labelledby="dropdownMenuLink5z">
+            <div class="dropdown-header">Dropdown Header:</div>
+            <a class="dropdown-item" href="#">Action</a>
+            <a class="dropdown-item" href="#">Another action</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="#">Something else here</a>
+          </div>
+        </div>
+      </div>
+      <!-- Card Body -->
+      <div class="card-body">
+        <app-force-directed-network [dataObservable]="kafkaStreamHandler.activeUsersPerActiveSubredditsDataObserver"
+                                    [initialData]="kafkaStreamHandler.activeUsersPerActiveSubredditsData"></app-force-directed-network>
       </div>
     </div>
   </div>

@@ -35,14 +35,6 @@ public class KafkaServiceImpl implements KafkaService {
     private Flux<ReceiverRecord<String, String>> testTopicStream;
 
     KafkaServiceImpl() throws IOException {
-        System.out.println("----------------------------");
-        System.out.println("----------------------------");
-        System.out.println("----------------------------");
-        System.out.println(TOPIC + GROUP_ID + CLIENT_ID);
-        System.out.println("----------------------------");
-        System.out.println("----------------------------");
-        System.out.println("----------------------------");
-        System.out.println("----------------------------");
 //        Properties kafkaProperties = PropertiesLoaderUtils.loadAllProperties("application.properties");
         Properties kafkaProperties = new Properties();
 //        kafkaProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);

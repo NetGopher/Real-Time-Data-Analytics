@@ -21,7 +21,6 @@ public class ReactiveWebSocketHandler implements WebSocketHandler {
 
     @Override
     public Mono<Void> handle(WebSocketSession webSocketSession) {
-        System.out.println("CALLED");
         return webSocketSession.send(kafkaService.getTestTopicFlux()
                 .map(record -> {
                     Message message = new Message("[Kafka] Add message", record.value());

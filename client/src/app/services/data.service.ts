@@ -3,6 +3,7 @@ import {ConnectWebSocket} from "@ngxs/websocket-plugin";
 import {Observable, Subject} from "rxjs";
 import {KafkaState} from "../state/kafka.state";
 import {
+  ActiveUsersPerActiveSubredditsBatch,
   KeyValuePairBatch,
   PostsSpeed,
   StreamData,
@@ -26,7 +27,7 @@ export class DataService {
     this.kafkaMessages$.subscribe(values => {
       if (typeof values[0] != "string") return;
       let value: StreamData = JSON.parse(values[0]);
-      console.log(value);
+      // console.log(value);
       switch (value.type) {
         case StreamTypes.REDDIT_MENTIONS: // "type == 'REDDIT_MENTIONS'"
           this.kafkaStreamHandlerService.handleRedditMentions(value.data as SubredditMention);
@@ -45,6 +46,9 @@ export class DataService {
           break;
         case StreamTypes.WORD_COUNT_BATCH: // "type == 'WORD_COUNT_BATCH'"
           this.kafkaStreamHandlerService.handleWordCountBatch(value.data as WordCountBatch);
+          break;
+        case StreamTypes.ACTIVE_USERS_PER_ACTIVE_SUBREDDITS: // "type == 'WORD_COUNT_BATCH'"
+          this.kafkaStreamHandlerService.handleActiveUsersPerActiveSubreddits(value.data as ActiveUsersPerActiveSubredditsBatch);
           break;
         default:
           console.log(value.type, " is undefined StreamType!")

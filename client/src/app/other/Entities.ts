@@ -17,6 +17,7 @@ export class StreamTypes {
   public static WORD_COUNT_BATCH = "WORD_COUNT_BATCH";
   public static NSFW_COUNT_BATCH = "NSFW_COUNT_BATCH";
   public static POSTS_PER_MINUTE = "POSTS_PER_MINUTE";
+  public static ACTIVE_USERS_PER_ACTIVE_SUBREDDITS = "ACTIVE_USERS_PER_ACTIVE_SUBREDDITS";
 
 }
 
@@ -53,3 +54,15 @@ export class PostsPerMinuteItem {
   public duration: number = 0
   public time: String = "";
 }
+
+export class SubredditUsers {
+    public value:number;
+    public key:number;
+    public children:SubredditUsers[]
+}
+
+export class ActiveUsersPerActiveSubredditsBatch{
+  public duration: number = 0
+  public data: SubredditUsers[] = []
+}
+

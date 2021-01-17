@@ -1,5 +1,6 @@
 package enset.bdcc.stage.kafkastreams2.common;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,6 +8,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.ser.std.ArraySerializerBase;
 import enset.bdcc.stage.kafkastreams2.config.StreamType;
 import enset.bdcc.stage.kafkastreams2.entities.WordData;
+import enset.bdcc.stage.kafkastreams2.filters.words.english.Stopwords;
 import enset.bdcc.stage.kafkastreams2.serializers.CustomSerdes;
 import lombok.*;
 import net.dean.jraw.models.Submission;
@@ -14,13 +16,16 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
+import java.security.Key;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 //@Component
 //TODO:  fix ClassCast Excpetion Error
@@ -34,9 +39,9 @@ public class StreamProcessorImplV6 implements StreamProcessor {
 
     private JsonMapper objectMapper = new JsonMapper();
     private JsonMapper jsonMapper = new JsonMapper();
-    private int minWordLength = 3;//words with length lower(or equals) than this will be filtered out
+    private int minWordLength = 5;//words with length lower(or equals) than this will be filtered out
     private int maxWordLength = 31; //words with length greater than this will be filtered out
-    private Long minWordCount = 1L; //words found minWordCount times will be filtered out
+    private Long minWordCount = 2L; //words found minWordCount times will be filtered out
 
     @Override
     public KStream<String, String> getSubredditMensionsStream(KStream<String, Submission> initialStream) {
@@ -128,7 +133,7 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                                     }
                                 }
         ).groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
-                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.SPEED_METER_WINDOW)))
                 .reduce(new Reducer<Long>() {
                     @Override
                     public Long apply(Long aLong, Long v1) {
@@ -140,7 +145,7 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                     @Override
                     public KeyValue<String, String> apply(Windowed<String> key, Long value) {
                         Map<String, String> resultMap = new HashMap<>();
-                        resultMap.put("duration", String.valueOf(Common.WINDOW_SIZE));
+                        resultMap.put("duration", String.valueOf(Common.ACTIVE_USERS_PER_ACTIVE_R_WINDOW));
                         resultMap.put("count", String.valueOf(value));
                         String jsonString = Common.maptoJsonString(Common.addDataToStreamMap(StreamType.COUNT, resultMap));
                         return KeyValue.pair("stream", jsonString);
@@ -153,7 +158,9 @@ public class StreamProcessorImplV6 implements StreamProcessor {
     public KStream<String, String> getSubredditPostsProportion(KStream<String, Submission> initialStream) {
 
         return initialStream
-                .map((KeyValueMapper<String, Submission, KeyValue<String, Long>>) (k, v) -> KeyValue.pair(v.getSubreddit(), 1L))
+                .map((KeyValueMapper<String, Submission, KeyValue<String, Long>>) (k, v) -> {
+                    return KeyValue.pair(v.getSubreddit(), 1L);
+                })
                 //;
                 .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
                 .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)).advanceBy(Duration.ofSeconds(Common.WINDOW_SIZE)))
@@ -234,17 +241,19 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                 .flatMap(new KeyValueMapper<String, Submission, Iterable<KeyValue<String, Long>>>() {
                     @Override
                     public Iterable<KeyValue<String, Long>> apply(String s, Submission submission) {
-                        List<String> values = Arrays.asList(submission.getSelfText().toLowerCase().trim().split("[ :\\t)@.,]"));
+                        List<String> values = Arrays.asList(Stopwords.removeAllStopwords(submission.getSelfText().toLowerCase()).trim().split("[ :\\t)@.,]"));
                         return values.stream().map(value -> new KeyValue<String, Long>(value.trim(), 1L)).collect(Collectors.toList());
                     }
                 })
                 .filterNot((s, aLong) -> s.length() <= minWordLength || s.length() >= maxWordLength)
+//                .filterNot((s, aLong) -> s.toLowerCase().matches("(this|pretty|cool|things|mainly|although|always|another|mostly|various|using|about|again)"))
+//                .filterNot((s, aLong) -> Stopwords.isStopword())
                 .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
-                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)).advanceBy(Duration.ofSeconds(Common.WINDOW_SIZE)))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WORD_MAP_WINDOW)).advanceBy(Duration.ofSeconds(Common.WORD_MAP_WINDOW)))
                 .count()
-                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.WINDOW_SIZE), Suppressed.BufferConfig.unbounded()))
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.WORD_MAP_WINDOW), Suppressed.BufferConfig.unbounded()))
                 .toStream()
-                .filterNot((windowed, aLong) -> aLong.equals(minWordCount))
+                .filterNot((windowed, aLong) -> aLong <= minWordCount)
                 .map(new KeyValueMapper<Windowed<String>, Long, KeyValue<String, String>>() {
                     @SneakyThrows
                     @Override
@@ -254,7 +263,7 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                 })
 //
                 .groupByKey(Grouped.with(Serdes.String(), Serdes.String()))
-                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)).advanceBy(Duration.ofSeconds(Common.WINDOW_SIZE)))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WORD_MAP_WINDOW)).advanceBy(Duration.ofSeconds(Common.WORD_MAP_WINDOW)))
 
                 .aggregate(new Initializer<String>() {
 
@@ -284,7 +293,7 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                         return valuesString;
                     }
                 }, Materialized.with(Serdes.String(), Serdes.String()))
-                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.WINDOW_SIZE), Suppressed.BufferConfig.unbounded()))
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.WORD_MAP_WINDOW), Suppressed.BufferConfig.unbounded()))
                 .toStream()
                 .map(new KeyValueMapper<Windowed<String>, String, KeyValue<String, String>>() {
                     @SneakyThrows
@@ -294,7 +303,7 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                         List<WordData> dataList = new ArrayList<>(Arrays.asList(values));
                         Map<String, Object> map = new HashMap<>();
                         map.put("data", dataList);
-                        map.put("duration", Common.WINDOW_SIZE);
+                        map.put("duration", Common.WORD_MAP_WINDOW);
                         return new KeyValue<>(windowed.key(), Common.maptoJsonString(Common.addDataToStreamMap(StreamType.WORD_COUNT_BATCH, map)));
                     }
                 });
@@ -306,11 +315,11 @@ public class StreamProcessorImplV6 implements StreamProcessor {
     public KStream<String, String> getNsfwProportion(KStream<String, Submission> intialStream) {
         return intialStream.map((s, submission) -> new KeyValue<>(submission.isNsfw() ? "NSFW" : "NOT_NSFW", 1L))
                 .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
-                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)).advanceBy(Duration.ofSeconds(Common.WINDOW_SIZE)))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.NSFW_METER_WINDOW)).advanceBy(Duration.ofSeconds(Common.NSFW_METER_WINDOW)))
                 .count()
-                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.WINDOW_SIZE), Suppressed.BufferConfig.unbounded()))
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.NSFW_METER_WINDOW), Suppressed.BufferConfig.unbounded()))
                 .toStream()
-                      .map(new KeyValueMapper<Windowed<String>, Long, KeyValue<String, String>>() {
+                .map(new KeyValueMapper<Windowed<String>, Long, KeyValue<String, String>>() {
                     @SneakyThrows
                     @Override
                     public KeyValue<String, String> apply(Windowed<String> windowed, Long aLong) {
@@ -319,7 +328,7 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                 })
 //
                 .groupByKey(Grouped.with(Serdes.String(), Serdes.String()))
-                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WINDOW_SIZE)).advanceBy(Duration.ofSeconds(Common.WINDOW_SIZE)))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.NSFW_METER_WINDOW)).advanceBy(Duration.ofSeconds(Common.NSFW_METER_WINDOW)))
 
                 .aggregate(new Initializer<String>() {
 
@@ -352,7 +361,7 @@ public class StreamProcessorImplV6 implements StreamProcessor {
 
                     }
                 }, Materialized.with(Serdes.String(), Serdes.String()))
-                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.WINDOW_SIZE), Suppressed.BufferConfig.unbounded()))
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.NSFW_METER_WINDOW), Suppressed.BufferConfig.unbounded()))
                 .toStream()
                 .map(new KeyValueMapper<Windowed<String>, String, KeyValue<String, String>>() {
                     @SneakyThrows
@@ -362,20 +371,147 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                         List<KeyValuePair> dataList = new ArrayList<>(Arrays.asList(values));
                         Map<String, Object> map = new HashMap<>();
                         map.put("data", dataList);
-                        map.put("duration", Common.WINDOW_SIZE);
-
+                        map.put("duration", Common.NSFW_METER_WINDOW);
                         return new KeyValue<>(windowed.key(), Common.maptoJsonString(Common.addDataToStreamMap(StreamType.NSFW_COUNT_BATCH, map)));
                     }
                 });
 
     }
+
+    @Override
+    public KStream<String, String> getActiveUsersInActiveCommunitiesByPosts(KStream<String, Submission> initialStream) {
+        return initialStream.map(new KeyValueMapper<String, Submission, KeyValue<String, String>>() {
+            @Override
+            public KeyValue<String, String> apply(String s, Submission submission) {
+
+                List<String> list = new ArrayList<>();
+                return new KeyValue<>(submission.getSubreddit() + " " + submission.getAuthor(), submission.getAuthor());
+            }
+        }).groupBy(new KeyValueMapper<String, String, String>() {
+            @Override
+            public String apply(String key, String value) {
+                return key;
+            }
+        }, Grouped.with(Serdes.String(), Serdes.String()))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.ACTIVE_USERS_PER_ACTIVE_R_WINDOW)).advanceBy(Duration.ofSeconds(Common.ACTIVE_USERS_PER_ACTIVE_R_WINDOW)))
+                .count()
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.ACTIVE_USERS_PER_ACTIVE_R_WINDOW), Suppressed.BufferConfig.unbounded()))
+                .toStream()
+                .map((key, aLong) -> {
+                    String s = key.key();
+                    KeyValuePair keyValuePair = new KeyValuePair(s.substring(s.indexOf(" ")), aLong); //getting -->(subreddit,user)
+                    try {
+                        return new KeyValue<String, String>(s.substring(0, s.indexOf(" ")), jsonMapper.writeValueAsString(keyValuePair));
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace();
+                    }
+                    return new KeyValue<>("__error__", "");
+                })
+                .groupByKey(Grouped.with(Serdes.String(), Serdes.String()))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.ACTIVE_USERS_PER_ACTIVE_R_WINDOW)).advanceBy(Duration.ofSeconds(Common.ACTIVE_USERS_PER_ACTIVE_R_WINDOW)))
+                .aggregate(new Initializer<String>() {
+                    @SneakyThrows
+                    @Override
+                    public String apply() {
+                        SubredditPostAggregate subredditPostAggregate = new SubredditPostAggregate();
+                        subredditPostAggregate.setValue(0L);
+                        return jsonMapper.writeValueAsString(new SubredditPostAggregate());
+                    }
+                }, new Aggregator<String, String, String>() {
+
+                    @SneakyThrows
+                    @Override
+                    public String apply(String key, String value, String aggregateString) {
+                        SubredditPostAggregate subredditPostAggregate = jsonMapper.readValue(aggregateString, SubredditPostAggregate.class);
+                        subredditPostAggregate.setKey(key);
+                        KeyValuePair keyValuePair = jsonMapper.readValue(value, KeyValuePair.class);
+                        subredditPostAggregate.setValue(subredditPostAggregate.getValue() + keyValuePair.getValue());
+                        subredditPostAggregate.getChildren().add(keyValuePair);
+                        return jsonMapper.writeValueAsString(subredditPostAggregate);
+                    }
+                }, Materialized.with(Serdes.String(), Serdes.String()))
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.ACTIVE_USERS_PER_ACTIVE_R_WINDOW), Suppressed.BufferConfig.unbounded()))
+                .toStream()
+                .map(new KeyValueMapper<Windowed<String>, String, KeyValue<String, String>>() {
+                    @SneakyThrows
+                    @Override
+                    public KeyValue<String, String> apply(Windowed<String> windowed, String value) {
+                        return new KeyValue<String, String>("__data__", value);
+                    }
+                })
+                .groupByKey(Grouped.with(Serdes.String(), Serdes.String()))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.ACTIVE_USERS_PER_ACTIVE_R_WINDOW)).advanceBy(Duration.ofSeconds(Common.ACTIVE_USERS_PER_ACTIVE_R_WINDOW)))
+                .aggregate(new Initializer<String>() {
+
+                    @SneakyThrows
+                    @Override
+                    public String apply() {
+                        List<SubredditPostAggregate> subredditDataList = new ArrayList<>();
+                        String jsonResultString = jsonMapper.writeValueAsString(subredditDataList);
+                        return jsonResultString;
+                    }
+                }, new Aggregator<String, String, String>() {
+                    @SneakyThrows
+                    @Override
+                    public String apply(String key, String value, String aggregateValue) {
+                        SubredditPostAggregate newSubredditPostAggregate = objectMapper.readValue(value, SubredditPostAggregate.class);
+                        String valuesString = null;
+                        try {
+                            SubredditPostAggregate[] values = jsonMapper.readValue(aggregateValue, SubredditPostAggregate[].class);
+                            List<SubredditPostAggregate> dataList = new ArrayList<>(Arrays.asList(values));
+                            dataList.add(newSubredditPostAggregate);
+                            valuesString = jsonMapper.writeValueAsString(dataList.toArray());
+                        } catch (JsonProcessingException e) {
+                            e.printStackTrace();
+                            List<SubredditPostAggregate> subredditDataList = new ArrayList<>();
+                            return objectMapper.writeValueAsString(subredditDataList);
+                        }
+                        return valuesString;
+                    }
+                }, Materialized.with(Serdes.String(), Serdes.String()))
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.ACTIVE_USERS_PER_ACTIVE_R_WINDOW), Suppressed.BufferConfig.unbounded()))
+                .toStream()
+                .map(new KeyValueMapper<Windowed<String>, String, KeyValue<String, String>>() {
+                    @SneakyThrows
+                    @Override
+                    public KeyValue<String, String> apply(Windowed<String> windowed, String s) {
+                        SubredditPostAggregate[] values = jsonMapper.readValue(s, SubredditPostAggregate[].class);
+                        List<SubredditPostAggregate> dataList = new ArrayList<>(Arrays.asList(values));
+                        Map<String,Object> resMap = new HashMap<>();
+                        resMap.put("key", "r/all");
+                        long count = 0L;
+                        for (SubredditPostAggregate subredditPostAggregate : dataList) {
+                            count += subredditPostAggregate.getValue();
+                        }
+                        resMap.put("value", count);
+                        resMap.put("children", dataList);
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("data", resMap);
+                        map.put("duration", Common.ACTIVE_USERS_PER_ACTIVE_R_WINDOW);
+                        return new KeyValue<>(windowed.key(), Common.maptoJsonString(Common.addDataToStreamMap(StreamType.ACTIVE_USERS_PER_ACTIVE_SUBREDDITS, map)));
+                    }
+                });
+
+
+    }
 }
 
+@ToString
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
 class KeyValuePair {
     private String key;
     private Long value;
 }
+
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
+@Data
+class SubredditPostAggregate {
+    protected long value;
+    protected List<KeyValuePair> children = new ArrayList<>();
+    private String key;
+}
+
