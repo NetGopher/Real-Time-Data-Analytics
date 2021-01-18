@@ -527,6 +527,7 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                         Map<String, String> resultMap = new HashMap<>();
                         DateFormat format = new SimpleDateFormat("HH:mm:ss");
                         resultMap.put("time", format.format(new Date(key.window().end())));
+                        resultMap.put("duration",String.valueOf(Common.POSTS_PER_DURATION_WINDOW));
                         resultMap.put("time_epoch_start", String.valueOf(key.window().start()));
                         resultMap.put("time_epoch_end", String.valueOf(key.window().end()));
                         resultMap.put("count", String.valueOf(value));
