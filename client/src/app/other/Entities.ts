@@ -13,6 +13,7 @@ export class StreamTypes {
   public static COUNT_STREAM = "COUNT_STREAM";
   public static REDDIT_MENTIONS = "REDDIT_MENTIONS";
   public static REDDIT_MENTIONS_BATCH = "REDDIT_MENTIONS_BATCH";
+  public static POSTS_PER_DURATION = "POSTS_PER_DURATION";
   public static REDDIT_POSTS_PROPORTION = "REDDIT_POSTS_PROPORTION";
   public static WORD_COUNT_BATCH = "WORD_COUNT_BATCH";
   public static NSFW_COUNT_BATCH = "NSFW_COUNT_BATCH";
@@ -52,7 +53,12 @@ export class KeyValuePairBatch {
 export class PostsPerMinuteItem {
   public count: number = 1
   public duration: number = 0
-  public time: String = "";
+  public time: string = "";
+}
+export class PostsPerDuration {
+  public count: number = 1
+  public duration: number = 0
+  public time: string = "";
 }
 
 export class SubredditUsers {

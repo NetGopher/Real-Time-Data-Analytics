@@ -7,6 +7,10 @@ myself
 ourselves
 ours
 you
+didn't
+along
+alot
+amongst
 your
 yourself
 yourselves
@@ -30,6 +34,9 @@ such
 these
 those
 which
+without
+underneath
+
 what
 where
 when
@@ -71,6 +78,15 @@ might
 but
 could
 cannot
+much
+pretty
+seriously
+count
+choice
+thought
+mostly
+sure
+
 can't
 will
 would

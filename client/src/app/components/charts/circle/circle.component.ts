@@ -107,9 +107,9 @@ export class CircleComponent implements OnInit, OnDestroy, AfterViewInit {
       ctx.circleMask = ctx.chartContainer.createChild(am4core.Circle);
       let gradient = new am4core.LinearGradient();
       gradient.addColor(am4core.color("cyan"));
-      gradient.addColor(am4core.color("green"));
-      gradient.addColor(am4core.color("yellow"));
-      gradient.addColor(am4core.color("orange"));
+      gradient.addColor(am4core.color("blue"));
+      // gradient.addColor(am4core.color("yellow"));
+      // gradient.addColor(am4core.color("orange"));
       gradient.addColor(am4core.color("red"));
       gradient.rotation = 90;
       ctx.waves = ctx.chartContainer.createChild(am4core.WavedRectangle);

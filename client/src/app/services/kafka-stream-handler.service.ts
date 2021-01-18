@@ -6,7 +6,8 @@ import {
   SubredditMentionBatch,
   WordCountBatch,
   ActiveUsersPerActiveSubredditsBatch,
-  WordData, KeyValuePair, SubredditUsers
+  WordData, KeyValuePair, SubredditUsers,
+  PostsPerDuration
 } from "../other/Entities";
 import {BehaviorSubject, Observable, Subject} from "rxjs";
 
@@ -24,6 +25,8 @@ export class KafkaStreamHandlerService {
   public subredditPostsProportionObserver: BehaviorSubject<SubredditMention[]> = new BehaviorSubject<SubredditMention[]>(null);
   public postsSpeedList: PostsSpeed[] = [];
   public postsSpeedObserver: BehaviorSubject<number> = new BehaviorSubject<number>(1);
+  public postsPerDurationObserver: BehaviorSubject<PostsPerDuration> = new BehaviorSubject<PostsPerDuration>(new PostsPerDuration());
+  public currentPostPerDuration:PostsPerDuration = null;
   public nsfwData: KeyValuePair[];
   public nsfwDataObserver: BehaviorSubject<KeyValuePair[]> = new BehaviorSubject<KeyValuePair[]>(null);
   public activeUsersPerActiveSubredditsData: SubredditUsers[];
@@ -81,8 +84,24 @@ export class KafkaStreamHandlerService {
 
     // this.activeUsersPerActiveSubredditsData = convertedData
     // this.activeUsersPerActiveSubredditsDataObserver.next(convertedData);
-    this.activeUsersPerActiveSubredditsData = data.data
+
+    // @ts-ignore
+    if (data.data.length == 1 && (data.data[0]['key']) == 'r/all') {
+      this.activeUsersPerActiveSubredditsData = data.data[0].children;
+      this.activeUsersPerActiveSubredditsDataObserver.next(data.data[0].children);
+
+    } else {
+      this.activeUsersPerActiveSubredditsData = data.data
+      this.activeUsersPerActiveSubredditsDataObserver.next(data.data);
+    }
+    console.log("this")
     console.log(data.data)
-    this.activeUsersPerActiveSubredditsDataObserver.next(data.data);
+    console.log("typeof array"  + typeof [1,2])
+    console.log("typeof obj"  + typeof {})
+  }
+
+  handlePostsPerDuration(data: PostsPerDuration) {
+          this.currentPostPerDuration = data
+    this.postsPerDurationObserver.next(data)
   }
 }

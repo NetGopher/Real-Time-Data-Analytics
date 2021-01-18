@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 public class Common {
     private static JsonMapper jsonMapper = new JsonMapper();
     public static long WINDOW_SIZE = 30L;
+    public static long POSTS_PER_DURATION_WINDOW = 60L;
     public static long WORD_MAP_WINDOW = 30L;
     public static long SPEED_METER_WINDOW = 3L;
     public static long ACTIVE_USERS_PER_ACTIVE_R_WINDOW = 10L;

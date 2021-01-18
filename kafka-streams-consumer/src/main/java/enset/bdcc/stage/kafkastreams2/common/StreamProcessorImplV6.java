@@ -15,11 +15,14 @@ import net.dean.jraw.models.Submission;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.*;
+import org.apache.tomcat.jni.Time;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -139,13 +142,16 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                     public Long apply(Long aLong, Long v1) {
                         return aLong + v1;
                     }
-                }).toStream()
+                })
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.SPEED_METER_WINDOW), Suppressed.BufferConfig.unbounded()))
+
+                .toStream()
 //                .peek((stringWindowed, aLong) -> System.out.println("COUNT-> key: " + stringWindowed.key() + "value: " + aLong))
                 .map(new KeyValueMapper<Windowed<String>, Long, KeyValue<String, String>>() {
                     @Override
                     public KeyValue<String, String> apply(Windowed<String> key, Long value) {
                         Map<String, String> resultMap = new HashMap<>();
-                        resultMap.put("duration", String.valueOf(Common.ACTIVE_USERS_PER_ACTIVE_R_WINDOW));
+                        resultMap.put("duration", String.valueOf(Common.SPEED_METER_WINDOW));
                         resultMap.put("count", String.valueOf(value));
                         String jsonString = Common.maptoJsonString(Common.addDataToStreamMap(StreamType.COUNT, resultMap));
                         return KeyValue.pair("stream", jsonString);
@@ -477,7 +483,7 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                     public KeyValue<String, String> apply(Windowed<String> windowed, String s) {
                         SubredditPostAggregate[] values = jsonMapper.readValue(s, SubredditPostAggregate[].class);
                         List<SubredditPostAggregate> dataList = new ArrayList<>(Arrays.asList(values));
-                        Map<String,Object> resMap = new HashMap<>();
+                        Map<String, Object> resMap = new HashMap<>();
                         resMap.put("key", "r/all");
                         long count = 0L;
                         for (SubredditPostAggregate subredditPostAggregate : dataList) {
@@ -492,6 +498,42 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                     }
                 });
 
+
+    }
+
+    @Override
+    public KStream<String, String> getPostsPerDuration(KStream<String, Submission> initialStream) {
+        return initialStream.map(new KeyValueMapper<String, Submission, KeyValue<String, Long>>() {
+                                     @Override
+                                     public KeyValue<String, Long> apply(String k, Submission v) {
+                                         return KeyValue.pair("count", 1L);
+                                     }
+                                 }
+        ).groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.POSTS_PER_DURATION_WINDOW)).advanceBy(Duration.ofSeconds(Common.POSTS_PER_DURATION_WINDOW)))
+                .reduce(new Reducer<Long>() {
+                    @Override
+                    public Long apply(Long aLong, Long v1) {
+                        return aLong + v1;
+                    }
+                })
+                .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(Common.POSTS_PER_DURATION_WINDOW), Suppressed.BufferConfig.unbounded()))
+
+                .toStream()
+//                .peek((stringWindowed, aLong) -> System.out.println("COUNT-> key: " + stringWindowed.key() + "value: " + aLong))
+                .map(new KeyValueMapper<Windowed<String>, Long, KeyValue<String, String>>() {
+                    @Override
+                    public KeyValue<String, String> apply(Windowed<String> key, Long value) {
+                        Map<String, String> resultMap = new HashMap<>();
+                        DateFormat format = new SimpleDateFormat("HH:mm:ss");
+                        resultMap.put("time", format.format(new Date(key.window().end())));
+                        resultMap.put("time_epoch_start", String.valueOf(key.window().start()));
+                        resultMap.put("time_epoch_end", String.valueOf(key.window().end()));
+                        resultMap.put("count", String.valueOf(value));
+                        String jsonString = Common.maptoJsonString(Common.addDataToStreamMap(StreamType.POSTS_PER_DURATION, resultMap));
+                        return KeyValue.pair("stream", jsonString);
+                    }
+                });
 
     }
 }

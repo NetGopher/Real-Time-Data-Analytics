@@ -4,7 +4,7 @@ import {Observable, Subject} from "rxjs";
 import {KafkaState} from "../state/kafka.state";
 import {
   ActiveUsersPerActiveSubredditsBatch,
-  KeyValuePairBatch,
+  KeyValuePairBatch, PostsPerDuration,
   PostsSpeed,
   StreamData,
   StreamTypes,
@@ -45,10 +45,14 @@ export class DataService {
           this.kafkaStreamHandlerService.handleNSFWMeter(value.data as KeyValuePairBatch);
           break;
         case StreamTypes.WORD_COUNT_BATCH: // "type == 'WORD_COUNT_BATCH'"
+          console.log("WORD COUNT")
           this.kafkaStreamHandlerService.handleWordCountBatch(value.data as WordCountBatch);
           break;
         case StreamTypes.ACTIVE_USERS_PER_ACTIVE_SUBREDDITS: // "type == 'WORD_COUNT_BATCH'"
           this.kafkaStreamHandlerService.handleActiveUsersPerActiveSubreddits(value.data as ActiveUsersPerActiveSubredditsBatch);
+          break;
+        case StreamTypes.POSTS_PER_DURATION: // "type == 'WORD_COUNT_BATCH'"
+          this.kafkaStreamHandlerService.handlePostsPerDuration(value.data as PostsPerDuration);
           break;
         default:
           console.log(value.type, " is undefined StreamType!")

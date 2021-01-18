@@ -14,13 +14,15 @@ import * as am4charts from "@amcharts/amcharts4/charts";
 import am4themes_animated from "@amcharts/amcharts4/themes/animated";
 import {Observable} from "rxjs";
 import {isPlatformBrowser} from "@angular/common";
-import {PostsPerMinuteItem} from "../../../other/Entities";
+import {PostsPerDuration, PostsPerMinuteItem} from "../../../other/Entities";
+import {CategoryAxis, ColumnSeries, ValueAxis, XYChart} from "@amcharts/amcharts4/charts";
+
 @Component({
   selector: 'app-column',
   templateUrl: './column.component.html',
   styleUrls: ['./column.component.css']
 })
-export class ColumnComponent implements OnInit {
+export class ColumnComponent implements OnInit, OnDestroy, AfterViewInit {
   @Input('dataObservable')
   public dataObservable: Observable<any>;
   @Input('refreshInterval')
@@ -30,17 +32,22 @@ export class ColumnComponent implements OnInit {
 
   @Input('initialData')
   public newData: any[] = [];
-  private chart: any;
+  public chart: XYChart;
   public static counterId: number = 0;
 
   private triggerChange: boolean = false;
-  columnComponent: PostsPerMinuteItem;
+  columnComponent: PostsPerDuration;
+  private categoryAxis: CategoryAxis;
+  private valueAxis: ValueAxis;
+  private series: ColumnSeries;
+  private columnTemplate: ColumnSeries["_column"];
 
-  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone) { }
+  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone) {
+  }
 
   randomIdValueString: string;
 
-  browserOnly(f: (columnComponent: ColumnComponent) => void) {
+  browserOnly(f: (ctx: ColumnComponent) => void) {
     if (isPlatformBrowser(this.platformId)) {
       this.zone.runOutsideAngular(() => {
         f(this);
@@ -49,26 +56,28 @@ export class ColumnComponent implements OnInit {
   }
 
   ngAfterViewInit() {
-    this.browserOnly((columnComponent) => {
+    this.browserOnly((ctx) => {
       /* Chart code */
       // Themes begin
       am4core.useTheme(am4themes_animated);
       // Themes end
 
       // Create chart instance
-      columnComponent.chart = am4core.create("column_chart_" + columnComponent.randomIdValueString, am4charts.XYChart);
+      ctx.chart = am4core.create("column_chart_" + ctx.randomIdValueString, am4charts.XYChart);
 
       // Add data
-      columnComponent.chart.data = columnComponent.newData;
+      if (ctx.newData.length > 0 && ctx.newData[0] != null)
+        ctx.chart.data = ctx.newData;
+      else ctx.chart.data = []
 
       // Create axes
 
-      let categoryAxis = columnComponent.chart.xAxes.push(new am4charts.CategoryAxis());
-      categoryAxis.dataFields.category = "time";
-      categoryAxis.renderer.grid.template.location = 0;
-      categoryAxis.renderer.minGridDistance = 30;
+      ctx.categoryAxis = ctx.chart.xAxes.push(new am4charts.CategoryAxis());
+      ctx.categoryAxis.dataFields.category = "time";
+      ctx.categoryAxis.renderer.grid.template.location = 0;
+      ctx.categoryAxis.renderer.minGridDistance = 30;
 
-      categoryAxis.renderer.labels.template.adapter.add("dy", function(dy, target) {
+      ctx.categoryAxis.renderer.labels.template.adapter.add("dy", function (dy, target) {
         // @ts-ignore
         if (target.dataItem && target.dataItem.index & 2 == 2) {
           return dy + 25;
@@ -76,28 +85,31 @@ export class ColumnComponent implements OnInit {
         return dy;
       });
 
-      let valueAxis = columnComponent.chart.yAxes.push(new am4charts.ValueAxis());
+      ctx.valueAxis = ctx.chart.yAxes.push(new am4charts.ValueAxis());
 
       // Create series
-      let series = columnComponent.chart.series.push(new am4charts.ColumnSeries());
-      series.dataFields.valueY = "count";
-      series.dataFields.categoryX = "time";
-      series.name = "Count";
-      series.columns.template.tooltipText = "{categoryX}: [bold]{valueY}[/]";
-      series.columns.template.fillOpacity = .8;
+      ctx.series = ctx.chart.series.push(new am4charts.ColumnSeries());
+      ctx.series.dataFields.valueY = "count";
+      ctx.series.dataFields.categoryX = "time";
+      ctx.series.name = "Count";
+      ctx.series.columns.template.tooltipText = "{categoryX}: [bold]{valueY}[/]";
+      ctx.series.columns.template.fillOpacity = .8;
 
-      let columnTemplate = series.columns.template;
-      columnTemplate.strokeWidth = 2;
-      columnTemplate.strokeOpacity = 1;
+      ctx.columnTemplate = ctx.series.columns.template;
+      ctx.columnTemplate.strokeWidth = 2;
+      ctx.columnTemplate.strokeOpacity = 1;
 
-      columnComponent.dataObservable.subscribe((newValue: PostsPerMinuteItem) => {
-        if(newValue){
-          console.log('New PostsPerMinute Value: ' + JSON.stringify(newValue));
-          //columnComponent.newData = columnComponent.newData.shift()
-          if(columnComponent.newData.length === 3)
-            columnComponent.newData.shift()
-          columnComponent.newData.push(newValue)
-          columnComponent.chart.data = columnComponent.newData;
+      ctx.dataObservable.subscribe((newValue: PostsPerDuration) => {
+        if (newValue) {
+          console.log('New PostsPerMinute Value: ' + newValue);
+          //ctx.newData = ctx.newData.shift()
+          if (ctx.newData.length >= 4){
+
+            ctx.newData.shift()
+          }
+          ctx.newData.push(newValue)
+          ctx.chart.data = ctx.newData;
+
         }
 
       });
@@ -117,6 +129,9 @@ export class ColumnComponent implements OnInit {
   ngOnInit(): void {
     this.randomIdValueString = `` + ColumnComponent.counterId;
     ColumnComponent.counterId++;
+    if (this.newData.length == 1 && !this.newData[0]) {
+      this.newData = [];
+    }
 
   }
 
