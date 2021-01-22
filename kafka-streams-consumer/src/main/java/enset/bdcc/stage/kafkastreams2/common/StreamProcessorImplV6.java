@@ -247,13 +247,14 @@ public class StreamProcessorImplV6 implements StreamProcessor {
                 .flatMap(new KeyValueMapper<String, Submission, Iterable<KeyValue<String, Long>>>() {
                     @Override
                     public Iterable<KeyValue<String, Long>> apply(String s, Submission submission) {
-                        List<String> values = Arrays.asList(Stopwords.removeAllStopwords(submission.getSelfText().toLowerCase()).trim().split("[ :\\t)@.,]"));
+//                        List<String> values = Arrays.asList(Stopwords.removeAllStopwords(submission.getSelfText().toLowerCase()).trim().split("[ :\\t)@.,]"));
+                        List<String> values = Arrays.asList(submission.getSelfText().toLowerCase().trim().split("[ :\\t)@.,]"));
                         return values.stream().map(value -> new KeyValue<String, Long>(value.trim(), 1L)).collect(Collectors.toList());
                     }
                 })
                 .filterNot((s, aLong) -> s.length() <= minWordLength || s.length() >= maxWordLength)
 //                .filterNot((s, aLong) -> s.toLowerCase().matches("(this|pretty|cool|things|mainly|although|always|another|mostly|various|using|about|again)"))
-//                .filterNot((s, aLong) -> Stopwords.isStopword())
+                .filterNot((s, aLong) -> Stopwords.isStopword(s.toLowerCase()))
                 .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
                 .windowedBy(TimeWindows.of(Duration.ofSeconds(Common.WORD_MAP_WINDOW)).advanceBy(Duration.ofSeconds(Common.WORD_MAP_WINDOW)))
                 .count()

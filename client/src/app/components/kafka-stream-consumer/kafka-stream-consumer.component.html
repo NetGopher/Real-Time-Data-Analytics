@@ -198,7 +198,7 @@
       <div class="card-body">
         <app-tag-cloud-chart [dataObservable]="kafkaStreamHandler.wordDataObserver"
                              [initialData]="kafkaStreamHandler.wordData" [valueProperty]="'count'"
-                             [categoryProperty]="'word'" [title]="'Most used words'"></app-tag-cloud-chart>
+                             [categoryProperty]="'word'" [maxCount]="50" [title]="'Most used words'"></app-tag-cloud-chart>
       </div>
     </div>
   </div>

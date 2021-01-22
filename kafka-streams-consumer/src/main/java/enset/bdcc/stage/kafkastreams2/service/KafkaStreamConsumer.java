@@ -40,9 +40,9 @@ public class KafkaStreamConsumer {
         StreamsBuilder streamsBuilder = new StreamsBuilder();
         KStream<String, Submission> initialStream = streamsBuilder.stream("submissions", Consumed.with(Serdes.String(), CustomSerdes.SubmissionSerde()));
         streamProcessor
-                .getPostsPerDuration(initialStream)
+                .getWordCount(initialStream)
+                .merge(streamProcessor.getPostsPerDuration(initialStream))
                 .merge(streamProcessor.getActiveUsersInActiveCommunitiesByPosts(initialStream))
-                .merge(streamProcessor.getWordCount(initialStream))
                 .merge(streamProcessor.getPostsPerDuration(initialStream))
                 .merge(streamProcessor.getSubredditMensionsStream(initialStream))
                 .merge(streamProcessor.calculateStreamCount(initialStream))

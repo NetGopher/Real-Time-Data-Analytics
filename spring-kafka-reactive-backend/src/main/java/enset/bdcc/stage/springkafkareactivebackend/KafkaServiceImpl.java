@@ -44,8 +44,8 @@ public class KafkaServiceImpl implements KafkaService {
 //        kafkaProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 //        kafkaProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, AUTO_OFFSET_REST);
         kafkaProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
-        kafkaProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, "dick1");
-        kafkaProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "fat1");
+        kafkaProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, "reactive-client-1");
+        kafkaProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "reactive-client-group");
         kafkaProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         kafkaProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         kafkaProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
