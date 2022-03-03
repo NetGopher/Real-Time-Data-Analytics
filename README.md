@@ -4,12 +4,12 @@ The purpose of this project was to get metrics about Reddit posts in Real time u
 It contains five main components:
 * `client` which is the front end app using Angular.
 * a web service (`Reddit-producer`) that calls the Reddit API and gets posts. it then sends it to a Kafka topic. Here is an example of a Rest call to the reddit API: 
-![image](https://user-images.githubusercontent.com/47919190/156658903-166892c5-f94c-4a51-b39f-1f60f5dee00d.png)
+![Rapport_stage_d'application67](https://user-images.githubusercontent.com/47919190/156660688-4630e007-23a8-4fb8-802c-4d61523645eb.jpg)
 
 * two Consumers (`Kafka-Stream-Consumer` and `Spark-Consumer`) that are basically stream processors. These get the data from Kafka as a Stream, and process it in Real-time, producing  metrics and statistics that are put back in a Kafka Topic `metrics` to be consumed later.
 * `Spring-Kafka-Reactive-Backend` is a service that is connected to the reddit metrics topic and waits sends it to the frontend using a websocket.
 ## Architecture
-![image](https://user-images.githubusercontent.com/47919190/156658469-23252980-1f6e-456e-88b0-c3e4a87e8535.png)
+![Rapport_stage_d'application66](https://user-images.githubusercontent.com/47919190/156660684-306a7f97-c18d-47b3-ae12-f7efafda5611.jpg)
 Note: Hive wasn't used in this project.
 ## Screenshots
 
@@ -24,3 +24,5 @@ Note: Hive wasn't used in this project.
 ![Rapport_stage_d'application7](https://user-images.githubusercontent.com/47919190/156660144-fd06bb2c-cb65-4d4f-8723-6e279e1b0f04.jpg)
 ![Rapport_stage_d'application6](https://user-images.githubusercontent.com/47919190/156660154-96b8884f-dc4e-40d9-92a2-c37e5300444f.jpg)
 ![Rapport_stage_d'application5](https://user-images.githubusercontent.com/47919190/156660155-8e00ca7a-c4e4-4e64-a90d-757608e195f3.jpg)
+
+
