@@ -12,6 +12,15 @@ It contains five main components:
 ![image](https://user-images.githubusercontent.com/47919190/156658469-23252980-1f6e-456e-88b0-c3e4a87e8535.png)
 Note: Hive wasn't used in this project.
 ## Screenshots
-![image](https://user-images.githubusercontent.com/47919190/156659756-37ff43b9-8e77-4cf4-a2c3-15643551366e.png)
 
 
+
+![Rapport_stage_d'application](https://user-images.githubusercontent.com/47919190/156659950-3fa5571e-5f85-4125-866a-3d428a482496.jpg)
+![Rapport_stage_d'application 4jpg](https://user-images.githubusercontent.com/47919190/156660118-1599a61b-e457-475c-9b78-b544f4645cfa.jpg)
+![Rapport_stage_d'application3](https://user-images.githubusercontent.com/47919190/156660127-48dbe5ad-892d-490f-bb6e-01e416e463c3.jpg)
+![Rapport_stage_d'application2](https://user-images.githubusercontent.com/47919190/156660131-f3ee9afd-62fe-4ca9-899c-87266e6525dd.jpg)
+![Rapport_stage_d'application9](https://user-images.githubusercontent.com/47919190/156660134-7ba502fb-34c0-4aba-b076-ccf6b8027649.jpg)
+![Rapport_stage_d'application8](https://user-images.githubusercontent.com/47919190/156660140-9ae1b2ca-aa85-433c-aa3f-136ecff92845.jpg)
+![Rapport_stage_d'application7](https://user-images.githubusercontent.com/47919190/156660144-fd06bb2c-cb65-4d4f-8723-6e279e1b0f04.jpg)
+![Rapport_stage_d'application6](https://user-images.githubusercontent.com/47919190/156660154-96b8884f-dc4e-40d9-92a2-c37e5300444f.jpg)
+![Rapport_stage_d'application5](https://user-images.githubusercontent.com/47919190/156660155-8e00ca7a-c4e4-4e64-a90d-757608e195f3.jpg)
